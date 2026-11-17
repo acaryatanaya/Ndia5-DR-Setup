@@ -43,7 +43,7 @@ create_key_pair = true
 public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIg7ACyQWiWUOuR+qOAZRAhYocqoTuaQK5xg5SCqPB+6 Ndia5-DR-Bastion" # e.g. "ssh-ed25519 AAAAC3Nza... hyd-bastion"
 
 # ---------- Bastion (Ubuntu 22.04) ----------
-bastion_instance_type    = "t4g.small"
+bastion_instance_type    = "t3a.medium" # t3a.medium = 2 vCPU, 4 GiB RAM, EBS only. t3a.small = 2 vCPU, 2 GiB RAM, EBS only. t3a.micro = 2 vCPU, 1 GiB RAM, EBS only.
 bastion_root_volume_size = 30 # GiB, always encrypted
 
 # Two users that log in with SSH + password. Rename them as you like.
@@ -70,7 +70,7 @@ enable_ebs_encryption_by_default = true # true = encrypt every new EBS volume in
 create_eks                = true
 eks_version               = "1.34" # verify it is currently supported in your region
 eks_admin_principal_arns  = []     # extra admin IAM role/user ARNs (the bastion role is added automatically)
-eks_node_instance_types   = ["t3.medium"] # do not use t2/t3.micro: only 4 pods per node
+eks_node_instance_types   = ["t3a.medium"] # do not use t2/t3.micro: only 4 pods per node
 eks_node_capacity_type    = "ON_DEMAND"
 eks_node_disk_size        = 80
 eks_node_count           = 2 # eks-node-1 -> 1st subnet, eks-node-2 -> 2nd. Set 3 for one node in each of your 3 subnets/AZs
