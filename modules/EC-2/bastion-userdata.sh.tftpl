@@ -1,0 +1,84 @@
+#!/bin/bash
+# Bastion bootstrap for Ubuntu 22.04. Log: /var/log/bastion-bootstrap.log
+set -euo pipefail
+exec > >(tee -a /var/log/bastion-bootstrap.log) 2>&1
+export DEBIAN_FRONTEND=noninteractive
+
+echo "== Packages =="
+apt-get update -y
+apt-get install -y unzip curl jq ca-certificates tar fail2ban ${extra_packages}
+
+cd /tmp
+
+echo "== AWS CLI v2 =="
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+unzip -q -o awscliv2.zip
+./aws/install --update
+
+echo "== kubectl (latest patch of ${kubectl_minor}) =="
+KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable-${kubectl_minor}.txt)"
+curl -fsSLO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
+curl -fsSLO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+echo "== eksctl =="
+curl -fsSLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz"
+curl -fsSLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt"
+grep eksctl_Linux_amd64.tar.gz eksctl_checksums.txt | sha256sum --check
+tar -xzf eksctl_Linux_amd64.tar.gz -C /usr/local/bin eksctl
+chmod 0755 /usr/local/bin/eksctl
+
+echo "== AWS defaults for every user =="
+cat > /etc/profile.d/aws-defaults.sh <<'EOF_AWS'
+export AWS_DEFAULT_REGION=${region}
+export AWS_REGION=${region}
+EOF_AWS
+%{ if eks_cluster_name != "" ~}
+
+echo "== kubectl auto-configuration on first login =="
+cat > /etc/profile.d/eks-kubeconfig.sh <<'EOF_EKS'
+# Configure kubectl for the EKS cluster the first time a user logs in interactively.
+if [ -n "$PS1" ] && [ ! -f "$HOME/.kube/config" ] && command -v aws >/dev/null 2>&1; then
+  aws eks update-kubeconfig --region ${region} --name ${eks_cluster_name} >/dev/null 2>&1 || true
+fi
+EOF_EKS
+%{ endif ~}
+
+echo "== SSH: allow password login =="
+# Cloud images ship 60-cloudimg-settings.conf with PasswordAuthentication no.
+# sshd uses the first value it reads, so this 00- file must sort before it.
+cat > /etc/ssh/sshd_config.d/00-bastion.conf <<'EOF_SSH'
+PasswordAuthentication yes
+PermitRootLogin no
+MaxAuthTries 4
+EOF_SSH
+sshd -t
+systemctl restart ssh
+systemctl enable --now fail2ban
+
+echo "== Users =="
+%{ for name, u in users ~}
+if ! id -u '${name}' >/dev/null 2>&1; then
+  useradd --create-home --shell /bin/bash --comment 'Bastion user' '${name}'
+fi
+echo '${name}:${u.password_hash}' | chpasswd -e
+install -d -m 0755 -o '${name}' -g '${name}' /home/${name}/.aws
+printf '[default]\nregion = ${region}\noutput = json\n' > /home/${name}/.aws/config
+chown '${name}:${name}' /home/${name}/.aws/config
+%{ if u.sudo ~}
+usermod -aG sudo '${name}'
+%{ endif ~}
+%{ if u.ssh_public_key != "" ~}
+install -d -m 0700 -o '${name}' -g '${name}' /home/${name}/.ssh
+echo '${u.ssh_public_key}' >> /home/${name}/.ssh/authorized_keys
+chown '${name}:${name}' /home/${name}/.ssh/authorized_keys
+chmod 0600 /home/${name}/.ssh/authorized_keys
+%{ endif ~}
+%{ endfor ~}
+
+echo "== Versions =="
+/usr/local/bin/aws --version
+/usr/local/bin/kubectl version --client
+/usr/local/bin/eksctl version
+echo "Bastion bootstrap finished."
