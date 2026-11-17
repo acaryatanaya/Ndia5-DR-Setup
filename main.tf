@@ -75,9 +75,9 @@ module "ec2" {
   os             = "ubuntu-22.04"
   ami_id         = var.bastion_ami_id
 
-  subnet_ids        = [var.bastion_subnet_id]
-  vpc_id            = var.vpc_id
-  ssh_allowed_cidrs = var.bastion_ssh_allowed_cidrs
+  subnet_ids          = [var.bastion_subnet_id]
+  vpc_id              = var.vpc_id
+  ssh_allowed_cidrs   = var.bastion_ssh_allowed_cidrs
   associate_public_ip = false # private subnet: no public IP, no Elastic IP
   create_eip          = false
   root_volume_size    = var.bastion_root_volume_size # encrypted with the default EBS key by the module
@@ -133,7 +133,7 @@ module "eks_cluster" {
 
   vpc_id                         = var.vpc_id
   api_allowed_security_group_ids = [module.ec2.security_group_id] # the bastion may reach the API (443)
-  enabled_log_types             = var.eks_enabled_log_types
+  enabled_log_types              = var.eks_enabled_log_types
 
   # Static keys (values may be unknown until apply), so for_each works on the first run.
   admin_principals = merge(
@@ -142,11 +142,11 @@ module "eks_cluster" {
   )
 
   # Worker nodes: eks-node-1, eks-node-2, ... (the EKS cluster security group is added automatically)
-  node_instance_types     = var.eks_node_instance_types
-  node_capacity_type      = var.eks_node_capacity_type
-  node_disk_size          = var.eks_node_disk_size
-  node_count              = var.eks_node_count
-  node_name_prefix        = var.eks_node_name_prefix
+  node_instance_types = var.eks_node_instance_types
+  node_capacity_type  = var.eks_node_capacity_type
+  node_disk_size      = var.eks_node_disk_size
+  node_count          = var.eks_node_count
+  node_name_prefix    = var.eks_node_name_prefix
 
   addons = var.eks_addons
 

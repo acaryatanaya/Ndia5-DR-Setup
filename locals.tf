@@ -6,7 +6,7 @@ locals {
   all_subnet_ids = distinct(concat([var.bastion_subnet_id], var.eks_subnet_ids))
 
   # Facts read from the existing resources.
-  subnet_azs           = { for id in local.all_subnet_ids : id => data.aws_subnet.this[id].availability_zone }
+  subnet_azs = { for id in local.all_subnet_ids : id => data.aws_subnet.this[id].availability_zone }
 
   rds_address            = try(data.aws_db_instance.replica[0].address, null)
   rds_port               = try(data.aws_db_instance.replica[0].port, null)
