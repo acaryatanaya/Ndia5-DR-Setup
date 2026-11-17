@@ -1,6 +1,8 @@
 locals {
   # ---- Secrets encryption key ----
   create_kms = var.create_kms_key && var.kms_key_arn == null
+  use_kms    = local.create_kms || var.kms_key_arn != null
+  
   kms_arn    = local.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn
 
   # ---- Worker nodes ----

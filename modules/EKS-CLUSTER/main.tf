@@ -46,7 +46,7 @@ resource "aws_kms_alias" "this" {
 }
 
 data "aws_iam_policy_document" "cluster_kms" {
-  count = local.kms_arn != null ? 1 : 0
+  count = local.use_kms ? 1 : 0
 
   statement {
     effect = "Allow"
@@ -62,7 +62,7 @@ data "aws_iam_policy_document" "cluster_kms" {
 }
 
 resource "aws_iam_role_policy" "cluster_kms" {
-  count = local.kms_arn != null ? 1 : 0
+  count = local.use_kms ? 1 : 0
 
   name   = "${var.name}-cluster-kms"
   role   = aws_iam_role.cluster.id
@@ -196,7 +196,7 @@ resource "aws_eks_cluster" "this" {
   }
 
   dynamic "encryption_config" {
-    for_each = local.kms_arn != null ? [1] : []
+    for_each = local.use_kms ? [1] : []
     content {
       resources = ["secrets"]
       provider {
