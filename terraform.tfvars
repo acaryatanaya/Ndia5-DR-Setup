@@ -14,7 +14,7 @@ tags = {
 #               --query "Subnets[].[SubnetId,AvailabilityZone,CidrBlock,MapPublicIpOnLaunch,Tags[?Key=='Name']|[0].Value]" --output table
 #             aws ec2 describe-security-groups --region ap-south-2 --filters Name=vpc-id,Values=<vpc-id> \
 #               --query "SecurityGroups[].[GroupId,GroupName,Description]" --output table
-vpc_id = "pc-022fe7aef0ac46dfb"
+vpc_id = "vpc-022fe7aef0ac46dfb"
 
 # ---------- Subnets: one setting per resource ----------
 bastion_subnet_id = "subnet-02f2d55a30e7e72c8" # 1 PRIVATE subnet (needs a NAT route for first-boot downloads)
