@@ -1,0 +1,261 @@
+############################
+# General
+############################
+variable "region" {
+  description = "AWS region."
+  type        = string
+  default     = "ap-south-2" # Hyderabad
+}
+
+variable "project" {
+  description = "Project name, used as a resource name prefix and tag."
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)."
+  type        = string
+  default     = "prod"
+}
+
+variable "tags" {
+  description = "Extra tags applied to everything Terraform creates."
+  type        = map(string)
+  default     = {}
+}
+
+############################
+# Existing VPC, subnets and security groups (created outside Terraform, only looked up)
+############################
+variable "vpc_id" {
+  description = "ID of the existing VPC."
+  type        = string
+
+  validation {
+    condition     = startswith(var.vpc_id, "vpc-")
+    error_message = "vpc_id must look like vpc-0123456789abcdef0."
+  }
+}
+
+# --- Subnets: one setting per resource ---
+variable "bastion_subnet_id" {
+  description = "Existing PRIVATE subnet for the bastion (no public IP; needs a NAT route or VPC endpoints for first-boot downloads and SSM)."
+  type        = string
+
+  validation {
+    condition     = startswith(var.bastion_subnet_id, "subnet-")
+    error_message = "bastion_subnet_id must look like subnet-0123456789abcdef0."
+  }
+}
+
+variable "eks_subnet_ids" {
+  description = "Existing subnets shared by the EKS control plane and the worker nodes (e.g. your 3 subnets). Must span at least 2 availability zones. Nodes are spread across them in order: eks-node-1 -> first, eks-node-2 -> second, ... (wrapping around). They need a NAT route or VPC endpoints."
+  type        = list(string)
+  default     = []
+}
+
+# --- Security groups: one setting per resource ---
+variable "bastion_security_group_ids" {
+  description = "Existing security group(s) attached to the bastion. They must allow SSH (22) from where your users connect."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.bastion_security_group_ids) >= 1 && alltrue([for s in var.bastion_security_group_ids : startswith(s, "sg-")])
+    error_message = "Provide at least one existing security group ID (sg-...) for the bastion."
+  }
+}
+
+variable "eks_cluster_security_group_ids" {
+  description = "Existing security group(s) added to the EKS control-plane network interfaces (in addition to the one EKS creates). Typically allow 443 from the bastion."
+  type        = list(string)
+  default     = []
+}
+
+variable "eks_node_security_group_ids" {
+  description = "Existing security group(s) added to every EKS worker node (the EKS cluster security group is always added too, so nodes can reach the control plane)."
+  type        = list(string)
+  default     = []
+}
+
+############################
+# Existing services (RDS replica, ECR) - looked up, not created
+############################
+variable "rds_replica_identifier" {
+  description = "DB instance identifier of the existing RDS read replica in this region. Null = skip."
+  type        = string
+  default     = null
+}
+
+variable "ecr_repository_names" {
+  description = "Names of the existing (replicated) ECR repositories in this region."
+  type        = list(string)
+  default     = []
+}
+
+variable "allow_bastion_to_rds" {
+  description = "Add an inbound rule (bastion's first security group -> DB port) to the RDS replica's security group(s). This modifies existing security groups. Leave false if your groups already allow it."
+  type        = bool
+  default     = false
+}
+
+############################
+# Key pair (you create the key yourself; paste the PUBLIC key)
+############################
+variable "create_key_pair" {
+  description = "Upload your public key as a new key pair."
+  type        = bool
+  default     = true
+}
+
+variable "existing_key_name" {
+  description = "Existing AWS key pair name, used when create_key_pair = false."
+  type        = string
+  default     = null
+}
+
+variable "public_key" {
+  description = "Contents of your .pub file. Used for the bastion's default 'ubuntu' user."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.public_key == "" || can(regex("^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp[0-9]+) ", trimspace(var.public_key)))
+    error_message = "public_key must be a valid OpenSSH public key (starts with ssh-ed25519, ssh-rsa or ecdsa-sha2-...). Paste the contents of your .pub file, not the private key."
+  }
+}
+
+############################
+# Bastion server (Ubuntu 22.04)
+############################
+variable "bastion_users" {
+  description = <<-EOT
+    Users created on the bastion, keyed by username. Each logs in with SSH + password.
+    password_hash is a SHA-512 crypt hash (generate with: openssl passwd -6). Never put plain passwords here.
+    sudo = true gives the user sudo rights. ssh_public_key (optional) also allows key login.
+  EOT
+  type = map(object({
+    password_hash  = string
+    sudo           = optional(bool, false)
+    ssh_public_key = optional(string, "")
+  }))
+  sensitive = true
+
+  validation {
+    condition     = alltrue([for name in keys(var.bastion_users) : can(regex("^[a-z_][a-z0-9_-]{0,31}$", name))])
+    error_message = "Usernames must be lowercase letters, digits, '_' or '-', start with a letter or '_', and be at most 32 characters."
+  }
+
+  validation {
+    condition     = alltrue([for u in values(var.bastion_users) : can(regex("^\\$(5|6|y)\\$[^'\\s:]+$", u.password_hash))])
+    error_message = "Each password_hash must be a SHA-512 (or yescrypt) crypt hash starting with $6$ (generate with: openssl passwd -6). Plain passwords are not accepted."
+  }
+}
+
+variable "bastion_instance_type" {
+  description = "Bastion instance type."
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "bastion_root_volume_size" {
+  description = "Bastion root volume size (GiB). The volume is always encrypted (default AWS-managed EBS key)."
+  type        = number
+  default     = 20
+}
+
+variable "bastion_ami_id" {
+  description = "Explicit AMI ID. Null = latest Ubuntu 22.04 from Canonical."
+  type        = string
+  default     = null
+}
+
+variable "bastion_extra_packages" {
+  description = "Extra apt packages to install, e.g. [\"postgresql-client\"] or [\"mysql-client\"]."
+  type        = list(string)
+  default     = []
+}
+
+variable "bastion_extra_policy_arns" {
+  description = "Extra managed IAM policies for the bastion role. The default role can only read EKS/ECR/RDS metadata. eksctl creating clusters needs much broader rights."
+  type        = list(string)
+  default     = []
+}
+
+variable "enable_ebs_encryption_by_default" {
+  description = "Turn on 'EBS encryption by default' for the whole account in this region. Affects every new volume in the region, so it is off unless you want it."
+  type        = bool
+  default     = false
+}
+
+############################
+# EKS (private endpoint only - there is no public access setting on purpose)
+############################
+variable "create_eks" {
+  description = "Create the EKS cluster, node groups and add-ons in the existing subnets. Control plane costs ~$0.10/hr plus nodes."
+  type        = bool
+  default     = false
+}
+
+variable "eks_version" {
+  description = "Kubernetes version. Check currently supported versions in the EKS docs. The bastion installs a matching kubectl."
+  type        = string
+  default     = "1.34"
+}
+
+variable "eks_enabled_log_types" {
+  description = "Control plane log types sent to CloudWatch."
+  type        = list(string)
+  default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+}
+
+variable "eks_admin_principal_arns" {
+  description = "Extra IAM role/user ARNs granted cluster-admin. The Terraform caller and the bastion role are admins automatically."
+  type        = list(string)
+  default     = []
+}
+
+variable "eks_node_instance_types" {
+  description = "Worker node instance types. Avoid t2/t3.micro: they allow only 4 pods per node."
+  type        = list(string)
+  default     = ["t3.medium"]
+}
+
+variable "eks_node_capacity_type" {
+  description = "ON_DEMAND or SPOT."
+  type        = string
+  default     = "ON_DEMAND"
+}
+
+variable "eks_node_disk_size" {
+  description = "Worker node disk size (GiB). Always encrypted."
+  type        = number
+  default     = 30
+}
+
+variable "eks_node_count" {
+  description = "Number of EKS worker nodes. Each node gets its own single-node group, named <eks_node_name_prefix>-N."
+  type        = number
+  default     = 2
+}
+
+variable "eks_node_name_prefix" {
+  description = "Worker node name prefix (nodes are named eks-node-1, eks-node-2, ...)."
+  type        = string
+  default     = "eks-node"
+}
+
+variable "eks_addons" {
+  description = "EKS managed add-ons keyed by name. addon_version = null uses the EKS default."
+  type = map(object({
+    addon_version            = optional(string)
+    service_account_role_arn = optional(string)
+    configuration_values     = optional(string)
+  }))
+  default = {
+    "vpc-cni"                = {}
+    "coredns"                = {}
+    "kube-proxy"             = {}
+    "aws-ebs-csi-driver"     = {}
+    "eks-pod-identity-agent" = {}
+  }
+}
