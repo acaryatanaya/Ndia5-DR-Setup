@@ -2,7 +2,7 @@
 # Everything under "Existing ..." is only LOOKED UP; Terraform never creates or deletes it.
 
 region      = "ap-south-2" # Hyderabad
-project     = "Ndia5-DR"
+project     = "Ndia5"
 environment = "DR" # dev or uat; must match the folder in backend.tf (key = "dev/...") and your IAM policy prefix
 
 tags = {
@@ -20,8 +20,8 @@ vpc_id = "vpc-022fe7aef0ac46dfb"
 bastion_subnet_id = "subnet-02f2d55a30e7e72c8" # 1 PRIVATE subnet (needs a NAT route for first-boot downloads)
 eks_subnet_ids = [                             # your 3 subnets, shared by the EKS control plane AND the worker nodes
   "subnet-03ee15f47db2deca5",
-  "subnet-09f221c48d696cec2",
   "subnet-05422a5e8920e74f1",
+  "subnet-09f221c48d696cec2",
 ]
 
 # ---------- Security groups: one setting per resource ----------
