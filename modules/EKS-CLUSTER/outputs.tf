@@ -77,3 +77,13 @@ output "irsa_role_arns" {
   description = "IRSA role ARNs created for add-ons, keyed by add-on name."
   value       = { for k, v in aws_iam_role.irsa : k => v.arn }
 }
+
+output "cluster_additional_security_group_id" {
+  description = "Security group created by this module for the control plane."
+  value       = aws_security_group.cluster.id
+}
+
+output "node_security_group_id" {
+  description = "Security group created by this module for the worker nodes."
+  value       = aws_security_group.node.id
+}

@@ -42,3 +42,8 @@ output "instance_profile_name" {
   description = "Instance profile name."
   value       = aws_iam_instance_profile.this.name
 }
+
+output "security_group_id" {
+  description = "Security group created for the instance(s)."
+  value       = aws_security_group.this.id
+}

@@ -40,12 +40,6 @@ variable "public_access_cidrs" {
   default     = []
 }
 
-variable "additional_security_group_ids" {
-  description = "Extra security groups attached to the control-plane network interfaces."
-  type        = list(string)
-  default     = []
-}
-
 variable "enabled_log_types" {
   description = "Control plane log types to ship to CloudWatch."
   type        = list(string)
@@ -79,8 +73,19 @@ variable "admin_principals" {
 ############################
 # Worker nodes (one single-node managed group per node: eks-node-1, eks-node-2, ...)
 ############################
-variable "node_security_group_ids" {
-  description = "Existing security groups added to every node. The EKS cluster security group is always added too, so nodes can reach the control plane."
+variable "vpc_id" {
+  description = "VPC in which the cluster and node security groups are created."
+  type        = string
+}
+
+variable "api_allowed_security_group_ids" {
+  description = "Security groups allowed to reach the Kubernetes API (443), e.g. the bastion's."
+  type        = list(string)
+  default     = []
+}
+
+variable "api_allowed_cidrs" {
+  description = "CIDR ranges allowed to reach the Kubernetes API (443), e.g. a VPN range."
   type        = list(string)
   default     = []
 }

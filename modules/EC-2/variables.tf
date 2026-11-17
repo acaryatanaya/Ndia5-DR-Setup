@@ -54,9 +54,21 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
-variable "security_group_ids" {
-  description = "Existing security group IDs."
+variable "vpc_id" {
+  description = "VPC in which the instance security group is created."
+  type        = string
+}
+
+variable "ssh_allowed_cidrs" {
+  description = "CIDR ranges allowed to SSH (22) to the instance. Empty = no inbound SSH rule (use SSM Session Manager)."
   type        = list(string)
+  default     = []
+}
+
+variable "ssh_allowed_security_group_ids" {
+  description = "Security groups allowed to SSH (22) to the instance (e.g. a VPN or jump host group)."
+  type        = list(string)
+  default     = []
 }
 
 variable "associate_public_ip" {

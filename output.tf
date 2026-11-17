@@ -11,9 +11,13 @@ output "subnet_azs" {
   value       = local.subnet_azs
 }
 
-output "security_groups_in_use" {
-  description = "Existing security groups in use (ID => name)."
-  value       = local.security_group_names
+output "security_groups_created" {
+  description = "Security groups created by the modules."
+  value = {
+    bastion     = module.ec2.security_group_id
+    eks_cluster = try(module.eks_cluster[0].cluster_additional_security_group_id, null)
+    eks_nodes   = try(module.eks_cluster[0].node_security_group_id, null)
+  }
 }
 
 output "rds_replica_endpoint" {

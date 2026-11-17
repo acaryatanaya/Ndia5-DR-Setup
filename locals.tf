@@ -4,11 +4,9 @@ locals {
 
   # Everything that must already exist; each one is looked up and checked against the VPC (see main.tf).
   all_subnet_ids = distinct(concat([var.bastion_subnet_id], var.eks_subnet_ids))
-  all_sg_ids     = distinct(concat(var.bastion_security_group_ids, var.eks_cluster_security_group_ids, var.eks_node_security_group_ids))
 
   # Facts read from the existing resources.
   subnet_azs           = { for id in local.all_subnet_ids : id => data.aws_subnet.this[id].availability_zone }
-  security_group_names = { for id in local.all_sg_ids : id => data.aws_security_group.this[id].name }
 
   rds_address            = try(data.aws_db_instance.replica[0].address, null)
   rds_port               = try(data.aws_db_instance.replica[0].port, null)

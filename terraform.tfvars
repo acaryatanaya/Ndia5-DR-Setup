@@ -25,9 +25,7 @@ eks_subnet_ids    = [                          # your 3 subnets, shared by the E
 ]
 
 # ---------- Security groups: one setting per resource ----------
-bastion_security_group_ids     = ["sg-0a40a659a93b5d9ae"] # must allow SSH (22) from your users
-eks_cluster_security_group_ids = ["sg-00a607ac7ffaaa777"] # optional extra SGs on the EKS control plane (e.g. allow 443 from the bastion)
-eks_node_security_group_ids    = ["sg-00a607ac7ffaaa777"] # optional extra SGs on every worker node
+bastion_ssh_allowed_cidrs = ["10.220.1.6/32"] # your VPC CIDR, VPN or office range (never 0.0.0.0/0)
 
 # ---------- Existing services (replace with your real names) ----------
 rds_replica_identifier = "ndia5-postgresql-db-prod-hyd-read-replica" # DB instance identifier of the replica in Hyderabad. null to skip.

@@ -13,11 +13,12 @@ locals {
     "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
   ], var.node_additional_policy_arns))
 
-  # The EKS-created cluster security group first (nodes must reach the control plane), then yours.
-  node_security_group_ids = concat(
-    [aws_eks_cluster.this.vpc_config[0].cluster_security_group_id],
-    var.node_security_group_ids
-  )
+  # Nodes get BOTH: the cluster security group EKS creates (it already allows control plane <-> node traffic)
+  # and the node security group created in this module.
+  node_security_group_ids = [
+    aws_eks_cluster.this.vpc_config[0].cluster_security_group_id,
+    aws_security_group.node.id,
+  ]
 
   # ---- Add-ons: IRSA roles for the ones that need AWS API access ----
   irsa_definitions = {

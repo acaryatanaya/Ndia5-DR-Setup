@@ -54,21 +54,20 @@ variable "eks_subnet_ids" {
   default     = []
 }
 
-# --- Security groups: one setting per resource ---
-variable "bastion_security_group_ids" {
-  description = "Existing security group(s) attached to the bastion. They must allow SSH (22) from where your users connect."
+# --- Security groups ---
+variable "bastion_ssh_allowed_cidrs" {
+  description = "CIDR ranges allowed to SSH (port 22) to the bastion, e.g. your VPC CIDR, VPN or office range. 0.0.0.0/0 is rejected."
   type        = list(string)
 
   validation {
-    condition     = length(var.bastion_security_group_ids) >= 1 && alltrue([for s in var.bastion_security_group_ids : startswith(s, "sg-")])
-    error_message = "Provide at least one existing security group ID (sg-...) for the bastion."
+    condition     = length(var.bastion_ssh_allowed_cidrs) >= 1 && alltrue([for c in var.bastion_ssh_allowed_cidrs : can(cidrhost(c, 0))])
+    error_message = "Provide at least one valid CIDR (e.g. 10.0.0.0/16) for SSH access to the bastion."
   }
-}
 
-variable "eks_cluster_security_group_ids" {
-  description = "Existing security group(s) added to the EKS control-plane network interfaces (in addition to the one EKS creates). Typically allow 443 from the bastion."
-  type        = list(string)
-  default     = []
+  validation {
+    condition     = !contains(var.bastion_ssh_allowed_cidrs, "0.0.0.0/0")
+    error_message = "Do not open SSH to 0.0.0.0/0. Use your VPC, VPN or office CIDR."
+  }
 }
 
 variable "eks_node_security_group_ids" {

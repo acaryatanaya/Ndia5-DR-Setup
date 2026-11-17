@@ -20,19 +20,6 @@ data "aws_subnet" "this" {
   }
 }
 
-data "aws_security_group" "this" {
-  for_each = toset(local.all_sg_ids)
-
-  id = each.value
-
-  lifecycle {
-    postcondition {
-      condition     = self.vpc_id == var.vpc_id
-      error_message = "Security group ${self.id} belongs to ${self.vpc_id}, not to the configured VPC ${var.vpc_id}."
-    }
-  }
-}
-
 # RDS read replica and replicated ECR repositories. Terraform fails at plan time if a name does not
 # exist, which doubles as a check that the replication has really arrived in this region.
 data "aws_db_instance" "replica" {
@@ -88,8 +75,9 @@ module "ec2" {
   os             = "ubuntu-22.04"
   ami_id         = var.bastion_ami_id
 
-  subnet_ids          = [var.bastion_subnet_id]
-  security_group_ids  = var.bastion_security_group_ids
+  subnet_ids        = [var.bastion_subnet_id]
+  vpc_id            = var.vpc_id
+  ssh_allowed_cidrs = var.bastion_ssh_allowed_cidrs
   associate_public_ip = false # private subnet: no public IP, no Elastic IP
   create_eip          = false
   root_volume_size    = var.bastion_root_volume_size # encrypted with the default EBS key by the module
@@ -111,7 +99,7 @@ module "ec2" {
   kubectl_minor    = var.eks_version
   extra_packages   = var.bastion_extra_packages
 
-  depends_on = [data.aws_subnet.this, data.aws_security_group.this]
+  depends_on = [data.aws_subnet.this]
 }
 
 ############################
@@ -121,7 +109,7 @@ resource "aws_vpc_security_group_ingress_rule" "bastion_to_rds" {
   for_each = var.allow_bastion_to_rds ? toset(local.rds_security_group_ids) : toset([])
 
   security_group_id            = each.value
-  referenced_security_group_id = var.bastion_security_group_ids[0]
+  referenced_security_group_id = module.ec2.security_group_id
   ip_protocol                  = "tcp"
   from_port                    = local.rds_port
   to_port                      = local.rds_port
@@ -143,7 +131,8 @@ module "eks_cluster" {
   endpoint_private_access = true
   endpoint_public_access  = false
 
-  additional_security_group_ids = var.eks_cluster_security_group_ids
+  vpc_id                         = var.vpc_id
+  api_allowed_security_group_ids = [module.ec2.security_group_id] # the bastion may reach the API (443)
   enabled_log_types             = var.eks_enabled_log_types
 
   # Static keys (values may be unknown until apply), so for_each works on the first run.
@@ -153,7 +142,6 @@ module "eks_cluster" {
   )
 
   # Worker nodes: eks-node-1, eks-node-2, ... (the EKS cluster security group is added automatically)
-  node_security_group_ids = var.eks_node_security_group_ids
   node_instance_types     = var.eks_node_instance_types
   node_capacity_type      = var.eks_node_capacity_type
   node_disk_size          = var.eks_node_disk_size
@@ -166,14 +154,3 @@ module "eks_cluster" {
 }
 
 # EKS creates its own cluster security group (attached to the control plane and the nodes).
-# Allow the bastion's security group(s) to reach the API on 443 through it.
-resource "aws_vpc_security_group_ingress_rule" "bastion_to_eks_api" {
-  for_each = var.create_eks ? toset(var.bastion_security_group_ids) : toset([])
-
-  security_group_id            = module.eks_cluster[0].cluster_security_group_id
-  referenced_security_group_id = each.value
-  ip_protocol                  = "tcp"
-  from_port                    = 443
-  to_port                      = 443
-  description                  = "Bastion to EKS API"
-}

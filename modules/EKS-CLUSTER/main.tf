@@ -82,6 +82,97 @@ resource "aws_cloudwatch_log_group" "this" {
 }
 
 ############################
+# Security groups
+#   cluster: extra group on the control-plane network interfaces (the private API endpoint)
+#   node:    group on every worker node
+# Rules are separate resources because the two groups reference each other.
+############################
+resource "aws_security_group" "cluster" {
+  name_prefix = "${var.name}-cluster-"
+  description = "${var.name} EKS control plane (additional security group)"
+  vpc_id      = var.vpc_id
+
+  tags = merge(var.tags, { Name = "${var.name}-cluster-sg" })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_security_group" "node" {
+  name_prefix = "${var.name}-node-"
+  description = "${var.name} EKS worker nodes"
+  vpc_id      = var.vpc_id
+
+  tags = merge(var.tags, { Name = "${var.name}-node-sg" })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# --- control plane (cluster group) ---
+resource "aws_vpc_security_group_ingress_rule" "cluster_api_from_nodes" {
+  security_group_id            = aws_security_group.cluster.id
+  referenced_security_group_id = aws_security_group.node.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  description                  = "Worker nodes to Kubernetes API"
+}
+
+# count (not for_each): the group IDs (e.g. the bastion's) are only known after apply
+resource "aws_vpc_security_group_ingress_rule" "cluster_api_from_sg" {
+  count = length(var.api_allowed_security_group_ids)
+
+  security_group_id            = aws_security_group.cluster.id
+  referenced_security_group_id = var.api_allowed_security_group_ids[count.index]
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  description                  = "Kubernetes API from a trusted security group"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "cluster_api_from_cidr" {
+  for_each = toset(var.api_allowed_cidrs)
+
+  security_group_id = aws_security_group.cluster.id
+  cidr_ipv4         = each.value
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  description       = "Kubernetes API from ${each.value}"
+}
+
+resource "aws_vpc_security_group_egress_rule" "cluster_to_nodes" {
+  security_group_id            = aws_security_group.cluster.id
+  referenced_security_group_id = aws_security_group.node.id
+  ip_protocol                  = "-1"
+  description                  = "Control plane to worker nodes (kubelet, webhooks)"
+}
+
+# --- worker nodes (node group) ---
+resource "aws_vpc_security_group_ingress_rule" "node_from_nodes" {
+  security_group_id            = aws_security_group.node.id
+  referenced_security_group_id = aws_security_group.node.id
+  ip_protocol                  = "-1"
+  description                  = "Node to node (pod networking)"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "node_from_control_plane" {
+  security_group_id            = aws_security_group.node.id
+  referenced_security_group_id = aws_security_group.cluster.id
+  ip_protocol                  = "-1"
+  description                  = "Control plane to nodes"
+}
+
+resource "aws_vpc_security_group_egress_rule" "node_all" {
+  security_group_id = aws_security_group.node.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+  description       = "Nodes outbound (image pulls through NAT, AWS APIs)"
+}
+############################
 # EKS cluster
 ############################
 resource "aws_eks_cluster" "this" {
@@ -96,7 +187,7 @@ resource "aws_eks_cluster" "this" {
     endpoint_private_access = var.endpoint_private_access
     endpoint_public_access  = var.endpoint_public_access
     public_access_cidrs     = var.endpoint_public_access ? var.public_access_cidrs : null # only valid with a public endpoint
-    security_group_ids      = var.additional_security_group_ids
+    security_group_ids      = [aws_security_group.cluster.id]
   }
 
   access_config {

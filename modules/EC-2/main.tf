@@ -88,6 +88,50 @@ resource "aws_iam_instance_profile" "this" {
 }
 
 ############################
+# Security group: SSH in from the allowed ranges, everything out (apt, AWS CLI downloads, SSM)
+############################
+resource "aws_security_group" "this" {
+  name_prefix = "${var.name}-sg-"
+  description = "${var.name} instance security group"
+  vpc_id      = var.vpc_id
+
+  tags = merge(var.tags, { Name = "${var.name}-sg" })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ssh_cidr" {
+  for_each = toset(var.ssh_allowed_cidrs)
+
+  security_group_id = aws_security_group.this.id
+  cidr_ipv4         = each.value
+  ip_protocol       = "tcp"
+  from_port         = 22
+  to_port           = 22
+  description       = "SSH from ${each.value}"
+}
+
+# count (not for_each): the group IDs may only be known after apply
+resource "aws_vpc_security_group_ingress_rule" "ssh_sg" {
+  count = length(var.ssh_allowed_security_group_ids)
+
+  security_group_id            = aws_security_group.this.id
+  referenced_security_group_id = var.ssh_allowed_security_group_ids[count.index]
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  description                  = "SSH from a trusted security group"
+}
+
+resource "aws_vpc_security_group_egress_rule" "all" {
+  security_group_id = aws_security_group.this.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+  description       = "Allow all outbound"
+}
+############################
 # Instance(s): encrypted root volume, IMDSv2, users + tools via user data
 ############################
 resource "aws_instance" "this" {
@@ -96,7 +140,7 @@ resource "aws_instance" "this" {
   ami                         = local.ami_id
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_ids[count.index % length(var.subnet_ids)]
-  vpc_security_group_ids      = var.security_group_ids
+  vpc_security_group_ids      = [aws_security_group.this.id]
   key_name                    = local.key_name
   iam_instance_profile        = aws_iam_instance_profile.this.name
   associate_public_ip_address = var.associate_public_ip
