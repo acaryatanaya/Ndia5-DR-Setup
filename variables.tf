@@ -234,7 +234,7 @@ variable "eks_node_disk_size" {
 variable "eks_node_count" {
   description = "Number of EKS worker nodes. Each node gets its own single-node group, named <eks_node_name_prefix>-N."
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "eks_node_name_prefix" {

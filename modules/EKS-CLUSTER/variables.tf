@@ -93,7 +93,7 @@ variable "api_allowed_cidrs" {
 variable "node_count" {
   description = "Number of worker nodes. Each node gets its own single-node group."
   type        = number
-  default     = 2
+  default     = 1
 
   validation {
     condition     = var.node_count >= 1
