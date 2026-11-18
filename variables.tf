@@ -126,29 +126,6 @@ variable "public_key" {
 ############################
 # Bastion server (Ubuntu 22.04)
 ############################
-variable "bastion_users" {
-  description = <<-EOT
-    Users created on the bastion, keyed by username. Each logs in with SSH + password.
-    password_hash is a SHA-512 crypt hash (generate with: openssl passwd -6). Never put plain passwords here.
-    sudo = true gives the user sudo rights. ssh_public_key (optional) also allows key login.
-  EOT
-  type = map(object({
-    password_hash  = string
-    sudo           = optional(bool, false)
-    ssh_public_key = optional(string, "")
-  }))
-  sensitive = true
-
-  validation {
-    condition     = alltrue([for name in keys(var.bastion_users) : can(regex("^[a-z_][a-z0-9_-]{0,31}$", name))])
-    error_message = "Usernames must be lowercase letters, digits, '_' or '-', start with a letter or '_', and be at most 32 characters."
-  }
-
-  validation {
-    condition     = alltrue([for u in values(var.bastion_users) : can(regex("^\\$(5|6|y)\\$[^'\\s:]+$", u.password_hash))])
-    error_message = "Each password_hash must be a SHA-512 (or yescrypt) crypt hash starting with $6$ (generate with: openssl passwd -6). Plain passwords are not accepted."
-  }
-}
 
 variable "bastion_instance_type" {
   description = "Bastion instance type."
