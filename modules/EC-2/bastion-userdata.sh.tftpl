@@ -4,7 +4,7 @@
 
 set -Eeuo pipefail
 exec > >(tee -a /var/log/bastion-bootstrap.log) 2>&1
-trap 'rc=$?; echo "ERROR: Bootstrap failed at line ${LINENO}; exit code ${rc}"; exit "$rc"' ERR
+trap 'rc=$?; echo "ERROR: Bootstrap failed at line $${LINENO}; exit code $${rc}"; exit "$${rc}"' ERR
 
 export DEBIAN_FRONTEND=noninteractive
 
