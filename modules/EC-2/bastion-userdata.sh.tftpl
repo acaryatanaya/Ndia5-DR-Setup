@@ -58,10 +58,10 @@ install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 echo "===== Installing eksctl ====="
 
 ARCH="amd64"
-PLATFORM="$(uname -s)_${ARCH}"
+PLATFORM="$(uname -s)_$${ARCH}"
 
 curl -fsSLO \
-  "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_${PLATFORM}.tar.gz"
+  "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$${PLATFORM}.tar.gz"
 
 curl -fsSLO \
   "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt"
@@ -70,7 +70,7 @@ curl -fsSLO \
 grep -E '^[[:xdigit:]]{64}[[:space:]]+\*?eksctl_Linux_amd64\.tar\.gz$' \
   eksctl_checksums.txt | sha256sum --check
 
-tar -xzf "eksctl_${PLATFORM}.tar.gz" -C /tmp
+tar -xzf "eksctl_$${PLATFORM}.tar.gz" -C /tmp
 
 install -o root -g root -m 0755 \
   /tmp/eksctl \
