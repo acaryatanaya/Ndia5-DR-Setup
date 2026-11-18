@@ -1,84 +1,256 @@
+
 #!/bin/bash
-# Bastion bootstrap for Ubuntu 22.04. Log: /var/log/bastion-bootstrap.log
-set -euo pipefail
+# Ndia5 DR Bastion bootstrap - Ubuntu 22.04
+# Log: /var/log/bastion-bootstrap.log
+
+set -Eeuo pipefail
 exec > >(tee -a /var/log/bastion-bootstrap.log) 2>&1
+
 export DEBIAN_FRONTEND=noninteractive
 
-echo "== Packages =="
+echo "===== Bastion bootstrap started ====="
+
+# --------------------------------------------------
+# 1. Install base packages
+# --------------------------------------------------
+
+echo "===== Installing base packages ====="
+
 apt-get update -y
-apt-get install -y unzip curl jq ca-certificates tar fail2ban ${extra_packages}
+apt-get install -y \
+  unzip \
+  curl \
+  jq \
+  ca-certificates \
+  tar \
+  gzip \
+  fail2ban \
+  gnupg \
+  ${extra_packages}
 
 cd /tmp
 
-echo "== AWS CLI v2 =="
-curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+# --------------------------------------------------
+# 2. Install AWS CLI v2
+# --------------------------------------------------
+
+echo "===== Installing AWS CLI v2 ====="
+
+curl -fsSL \
+  "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" \
+  -o awscliv2.zip
+
 unzip -q -o awscliv2.zip
 ./aws/install --update
 
-echo "== kubectl (latest patch of ${kubectl_minor}) =="
+# --------------------------------------------------
+# 3. Install kubectl
+# --------------------------------------------------
+
+echo "===== Installing kubectl ====="
+
 KUBECTL_VERSION="$(curl -fsSL https://dl.k8s.io/release/stable-${kubectl_minor}.txt)"
+
 curl -fsSLO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
 curl -fsSLO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl.sha256"
+
 echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+
 install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-echo "== eksctl =="
-curl -fsSLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz"
-curl -fsSLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt"
+# --------------------------------------------------
+# 4. Install eksctl
+# --------------------------------------------------
+
+echo "===== Installing eksctl ====="
+
+curl -fsSLO \
+  https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz
+
+curl -fsSLO \
+  https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt
+
 grep eksctl_Linux_amd64.tar.gz eksctl_checksums.txt | sha256sum --check
+
 tar -xzf eksctl_Linux_amd64.tar.gz -C /usr/local/bin eksctl
 chmod 0755 /usr/local/bin/eksctl
 
-echo "== AWS defaults for every user =="
+# --------------------------------------------------
+# 5. Install Helm
+# --------------------------------------------------
+
+echo "===== Installing Helm ====="
+
+HELM_ARCHIVE="helm-v${helm_version}-linux-amd64.tar.gz"
+
+curl -fsSLO "https://get.helm.sh/$HELM_ARCHIVE"
+curl -fsSLO "https://get.helm.sh/$HELM_ARCHIVE.sha256sum"
+
+sha256sum --check "$HELM_ARCHIVE.sha256sum"
+
+tar -xzf "$HELM_ARCHIVE" -C /tmp
+
+install -o root -g root -m 0755 \
+  /tmp/linux-amd64/helm \
+  /usr/local/bin/helm
+
+# --------------------------------------------------
+# 6. Configure AWS region globally
+# --------------------------------------------------
+
+echo "===== Configuring AWS region ====="
+
 cat > /etc/profile.d/aws-defaults.sh <<'EOF_AWS'
 export AWS_DEFAULT_REGION=${region}
 export AWS_REGION=${region}
 EOF_AWS
+
+chmod 0644 /etc/profile.d/aws-defaults.sh
+
+# Configure AWS CLI defaults for ubuntu and root.
+install -d -m 0700 -o ubuntu -g ubuntu /home/ubuntu/.aws
+install -d -m 0700 -o root -g root /root/.aws
+
+cat > /home/ubuntu/.aws/config <<'EOF_UBUNTU_AWS'
+[default]
+region = ${region}
+output = json
+EOF_UBUNTU_AWS
+
+cat > /root/.aws/config <<'EOF_ROOT_AWS'
+[default]
+region = ${region}
+output = json
+EOF_ROOT_AWS
+
+chown ubuntu:ubuntu /home/ubuntu/.aws/config
+chmod 0600 /home/ubuntu/.aws/config
+chmod 0600 /root/.aws/config
+
+# --------------------------------------------------
+# 7. Configure EKS kubeconfig for ubuntu and root
+# --------------------------------------------------
+
 %{ if eks_cluster_name != "" ~}
 
-echo "== kubectl auto-configuration on first login =="
-cat > /etc/profile.d/eks-kubeconfig.sh <<'EOF_EKS'
-# Configure kubectl for the EKS cluster the first time a user logs in interactively.
-if [ -n "$PS1" ] && [ ! -f "$HOME/.kube/config" ] && command -v aws >/dev/null 2>&1; then
-  aws eks update-kubeconfig --region ${region} --name ${eks_cluster_name} >/dev/null 2>&1 || true
+echo "===== Configuring EKS access ====="
+
+# Wait for the EKS control plane to become ACTIVE.
+EKS_READY=false
+
+for attempt in $(seq 1 60); do
+  EKS_STATUS="$(aws eks describe-cluster \
+    --region ${region} \
+    --name ${eks_cluster_name} \
+    --query 'cluster.status' \
+    --output text 2>/dev/null || true)"
+
+  echo "EKS status: $EKS_STATUS (attempt $attempt/60)"
+
+  if [ "$EKS_STATUS" = "ACTIVE" ]; then
+    EKS_READY=true
+    break
+  fi
+
+  sleep 30
+done
+
+if [ "$EKS_READY" != "true" ]; then
+  echo "ERROR: EKS cluster did not become ACTIVE within 30 minutes."
+  exit 1
 fi
-EOF_EKS
+
+# Prepare kubeconfig directories.
+install -d -m 0700 -o ubuntu -g ubuntu /home/ubuntu/.kube
+install -d -m 0700 -o root -g root /root/.kube
+
+# Configure kubeconfig for ubuntu.
+runuser -u ubuntu -- env \
+  AWS_DEFAULT_REGION=${region} \
+  AWS_REGION=${region} \
+  aws eks update-kubeconfig \
+  --region ${region} \
+  --name ${eks_cluster_name} \
+  --kubeconfig /home/ubuntu/.kube/config
+
+# Configure kubeconfig for root.
+aws eks update-kubeconfig \
+  --region ${region} \
+  --name ${eks_cluster_name} \
+  --kubeconfig /root/.kube/config
+
+chown ubuntu:ubuntu /home/ubuntu/.kube/config
+chmod 0600 /home/ubuntu/.kube/config
+chmod 0600 /root/.kube/config
+
+# Wait for the bastion IAM role's EKS access entry and
+# Kubernetes authentication to become available.
+KUBERNETES_ACCESS_READY=false
+
+for attempt in $(seq 1 60); do
+  if runuser -u ubuntu -- env \
+    AWS_DEFAULT_REGION=${region} \
+    AWS_REGION=${region} \
+    kubectl \
+    --kubeconfig /home/ubuntu/.kube/config \
+    get nodes >/tmp/ubuntu-kubectl-check.log 2>&1; then
+
+    KUBERNETES_ACCESS_READY=true
+    echo "Ubuntu Kubernetes access verified."
+    break
+  fi
+
+  echo "Waiting for EKS access entry and Kubernetes authentication (attempt $attempt/60)"
+  cat /tmp/ubuntu-kubectl-check.log || true
+  sleep 30
+done
+
+if [ "$KUBERNETES_ACCESS_READY" != "true" ]; then
+  echo "ERROR: Kubernetes authentication did not become available within 30 minutes."
+  exit 1
+fi
+
+# Verify root access too.
+kubectl --kubeconfig /root/.kube/config get nodes
+
+echo "===== EKS kubeconfig configured for ubuntu and root ====="
+
 %{ endif ~}
 
-echo "== SSH: allow password login =="
-# Cloud images ship 60-cloudimg-settings.conf with PasswordAuthentication no.
-# sshd uses the first value it reads, so this 00- file must sort before it.
+# --------------------------------------------------
+# 8. Configure SSH key-only authentication
+# --------------------------------------------------
+
+echo "===== Configuring SSH security ====="
+
 cat > /etc/ssh/sshd_config.d/00-bastion.conf <<'EOF_SSH'
-PasswordAuthentication yes
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
 PermitRootLogin no
 MaxAuthTries 4
 EOF_SSH
+
 sshd -t
 systemctl restart ssh
+
+# --------------------------------------------------
+# 9. Enable fail2ban
+# --------------------------------------------------
+
+echo "===== Enabling fail2ban ====="
+
 systemctl enable --now fail2ban
 
-echo "== Users =="
-%{ for name, u in users ~}
-if ! id -u '${name}' >/dev/null 2>&1; then
-  useradd --create-home --shell /bin/bash --comment 'Bastion user' '${name}'
-fi
-echo '${name}:${u.password_hash}' | chpasswd -e
-install -d -m 0755 -o '${name}' -g '${name}' /home/${name}/.aws
-printf '[default]\nregion = ${region}\noutput = json\n' > /home/${name}/.aws/config
-chown '${name}:${name}' /home/${name}/.aws/config
-%{ if u.sudo ~}
-usermod -aG sudo '${name}'
-%{ endif ~}
-%{ if u.ssh_public_key != "" ~}
-install -d -m 0700 -o '${name}' -g '${name}' /home/${name}/.ssh
-echo '${u.ssh_public_key}' >> /home/${name}/.ssh/authorized_keys
-chown '${name}:${name}' /home/${name}/.ssh/authorized_keys
-chmod 0600 /home/${name}/.ssh/authorized_keys
-%{ endif ~}
-%{ endfor ~}
+# --------------------------------------------------
+# 10. Verify installed tools
+# --------------------------------------------------
 
-echo "== Versions =="
-/usr/local/bin/aws --version
-/usr/local/bin/kubectl version --client
-/usr/local/bin/eksctl version
-echo "Bastion bootstrap finished."
+echo "===== Installed tool versions ====="
+
+aws --version
+kubectl version --client
+eksctl version
+helm version --short
+
+echo "===== Bastion bootstrap completed successfully ====="

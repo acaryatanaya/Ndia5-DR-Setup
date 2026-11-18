@@ -157,16 +157,16 @@ variable "region" {
   type        = string
 }
 
-variable "users" {
-  description = "Users created on the server, keyed by username (SSH + password). password_hash is a SHA-512 crypt hash."
-  type = map(object({
-    password_hash  = string
-    sudo           = optional(bool, false)
-    ssh_public_key = optional(string, "")
-  }))
-  sensitive = true
-  default   = {}
-}
+# variable "users" {
+#   description = "Users created on the server, keyed by username (SSH + password). password_hash is a SHA-512 crypt hash."
+#   type = map(object({
+#     password_hash  = string
+#     sudo           = optional(bool, false)
+#     ssh_public_key = optional(string, "")
+#   }))
+#   sensitive = true
+#   default   = {}
+# }
 
 variable "eks_cluster_name" {
   description = "EKS cluster to auto-configure kubectl for at each user's first login. Empty = none."
@@ -184,4 +184,10 @@ variable "extra_packages" {
   description = "Extra apt packages to install, e.g. [\"postgresql-client\"]."
   type        = list(string)
   default     = []
+}
+
+variable "helm_version" {
+  description = "Helm version to install on the bastion"
+  type        = string
+  default     = "3.17.3"
 }

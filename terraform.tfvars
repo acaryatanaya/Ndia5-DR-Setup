@@ -5,9 +5,6 @@ region      = "ap-south-2" # Hyderabad
 project     = "Ndia5"
 environment = "DR" # dev or uat; must match the folder in backend.tf (key = "dev/...") and your IAM policy prefix
 
-tags = {
-  Owner = "saurabh"
-}
 
 # ---------- Existing VPC (replace with your real IDs) ----------
 # Find them:  aws ec2 describe-subnets --region ap-south-2 --filters Name=vpc-id,Values=<vpc-id> \
@@ -40,25 +37,12 @@ allow_bastion_to_rds = false # true = add a rule to the RDS security group for t
 # ---------- Key pair (create it yourself, paste the PUBLIC key) ----------
 #   ssh-keygen -t ed25519 -f hyd-bastion-key -C "hyd-bastion"
 create_key_pair = true
-public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIg7ACyQWiWUOuR+qOAZRAhYocqoTuaQK5xg5SCqPB+6 Ndia5-DR-Bastion" # e.g. "ssh-ed25519 AAAAC3Nza... hyd-bastion"
+public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIg7ACyQWiWUOuR+qOAZRAhYocqoTuaQK5xg5SCqPB+6 Ndia5-DR-key" # e.g. "ssh-ed25519 AAAAC3Nza... hyd-bastion"
 
 # ---------- Bastion (Ubuntu 22.04) ----------
 bastion_instance_type    = "t3.medium" # t3a.medium = 2 vCPU, 4 GiB RAM, EBS only. t3a.small = 2 vCPU, 2 GiB RAM, EBS only. t3a.micro = 2 vCPU, 1 GiB RAM, EBS only.
 bastion_root_volume_size = 30           # GiB, always encrypted
 
-# Two users that log in with SSH + password. Rename them as you like.
-# Generate each hash (you type the password when prompted):   openssl passwd -6
-# Paste the full result (starts with $6$). Never put a plain password here.
-bastion_users = {
-  admin = {
-    password_hash = "$6$UMSQw6PacImW2Dg7$SuwtMAdPiY3bQooyWPtABYnd87d61bFXPZ.G1ADguVxrdPWOodOJhId6jdOekKvtdQELeVqvo5JJQCnvElMe21"
-    sudo          = true # true = user can run sudo
-  }
-  psspl = {
-    password_hash = "$6$vXsjd9Z4GTBfwoUI$GSJ/UO17WF3eZts5d/XVssVwvnkYQmj9KlxqjmHkWD9gYv2nBr1vv7VUnDwW7yRtCeEKz5uBQ2SFHKj8Yl5yj."
-    sudo          = true
-  }
-}
 
 # bastion_extra_packages    = ["postgresql-client"] # or ["mysql-client"], to reach the RDS replica
 # bastion_extra_policy_arns = []                    # eksctl that CREATES clusters needs much broader rights

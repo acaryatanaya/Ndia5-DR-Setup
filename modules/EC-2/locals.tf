@@ -31,9 +31,9 @@ locals {
   # First-boot script: installs AWS CLI v2, kubectl and eksctl, enables password SSH, creates the users.
   user_data = templatefile("${path.module}/bastion-userdata.sh.tftpl", {
     region           = var.region
-    users            = var.users
     eks_cluster_name = var.eks_cluster_name
     kubectl_minor    = var.kubectl_minor
+    helm_version     = var.helm_version
     extra_packages   = join(" ", var.extra_packages)
   })
 }
