@@ -99,7 +99,14 @@ output "eks_node_group_names" {
   value       = try(module.eks_cluster[0].node_group_names, null)
 }
 
+# output "eks_kubeconfig_command" {
+#   description = "Run this ON THE BASTION (the API has no public access). It runs automatically at each user's first login."
+#   value       = var.create_eks ? "aws eks update-kubeconfig --region ${var.region} --name ${local.eks_cluster_name}" : null
+# }
+
 output "eks_kubeconfig_command" {
-  description = "Run this ON THE BASTION (the API has no public access). It runs automatically at each user's first login."
-  value       = var.create_eks ? "aws eks update-kubeconfig --region ${var.region} --name ${local.eks_cluster_name}" : null
+  description = "EKS kubeconfig command. Automatically configured during bastion bootstrap."
+  value = var.create_eks ? (
+    "aws eks update-kubeconfig --region ${var.region} --name ${module.eks_cluster[0].cluster_name}"
+  ) : null
 }

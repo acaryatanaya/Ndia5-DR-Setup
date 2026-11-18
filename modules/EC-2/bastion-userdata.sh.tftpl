@@ -4,6 +4,7 @@
 
 set -Eeuo pipefail
 exec > >(tee -a /var/log/bastion-bootstrap.log) 2>&1
+trap 'rc=$?; echo "ERROR: Bootstrap failed at line ${LINENO}; exit code ${rc}"; exit "$rc"' ERR
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -17,14 +18,7 @@ echo "===== Installing base packages ====="
 
 apt-get update -y
 apt-get install -y \
-  unzip \
-  curl \
-  jq \
-  ca-certificates \
-  tar \
-  gzip \
-  fail2ban \
-  gnupg \
+  unzip curl jq ca-certificates tar gzip fail2ban gnupg \
   ${extra_packages}
 
 cd /tmp
@@ -63,16 +57,26 @@ install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 echo "===== Installing eksctl ====="
 
-curl -fsSLO \
-  https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz
+ARCH="amd64"
+PLATFORM="$(uname -s)_${ARCH}"
 
 curl -fsSLO \
-  https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt
+  "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_${PLATFORM}.tar.gz"
 
-grep eksctl_Linux_amd64.tar.gz eksctl_checksums.txt | sha256sum --check
+curl -fsSLO \
+  "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt"
 
-tar -xzf eksctl_Linux_amd64.tar.gz -C /usr/local/bin eksctl
-chmod 0755 /usr/local/bin/eksctl
+# Match only the exact archive checksum, excluding the SBOM checksum.
+grep -E '^[[:xdigit:]]{64}[[:space:]]+\*?eksctl_Linux_amd64\.tar\.gz$' \
+  eksctl_checksums.txt | sha256sum --check
+
+tar -xzf "eksctl_${PLATFORM}.tar.gz" -C /tmp
+
+install -o root -g root -m 0755 \
+  /tmp/eksctl \
+  /usr/local/bin/eksctl
+
+eksctl version
 
 # --------------------------------------------------
 # 5. Install Helm
@@ -134,13 +138,20 @@ chmod 0600 /root/.aws/config
 
 echo "===== Configuring EKS access ====="
 
+EKS_CLUSTER_NAME="${eks_cluster_name}"
+AWS_REGION="${region}"
+
+echo "EKS Cluster: $EKS_CLUSTER_NAME"
+echo "AWS Region: $AWS_REGION"
+
 # Wait for the EKS control plane to become ACTIVE.
 EKS_READY=false
 
 for attempt in $(seq 1 60); do
+
   EKS_STATUS="$(aws eks describe-cluster \
-    --region ${region} \
-    --name ${eks_cluster_name} \
+    --region "$AWS_REGION" \
+    --name "$EKS_CLUSTER_NAME" \
     --query 'cluster.status' \
     --output text 2>/dev/null || true)"
 
@@ -165,31 +176,31 @@ install -d -m 0700 -o root -g root /root/.kube
 
 # Configure kubeconfig for ubuntu.
 runuser -u ubuntu -- env \
-  AWS_DEFAULT_REGION=${region} \
-  AWS_REGION=${region} \
+  AWS_DEFAULT_REGION="$AWS_REGION" \
+  AWS_REGION="$AWS_REGION" \
   aws eks update-kubeconfig \
-  --region ${region} \
-  --name ${eks_cluster_name} \
+  --region "$AWS_REGION" \
+  --name "$EKS_CLUSTER_NAME" \
   --kubeconfig /home/ubuntu/.kube/config
 
 # Configure kubeconfig for root.
 aws eks update-kubeconfig \
-  --region ${region} \
-  --name ${eks_cluster_name} \
+  --region "$AWS_REGION" \
+  --name "$EKS_CLUSTER_NAME" \
   --kubeconfig /root/.kube/config
 
 chown ubuntu:ubuntu /home/ubuntu/.kube/config
 chmod 0600 /home/ubuntu/.kube/config
 chmod 0600 /root/.kube/config
 
-# Wait for the bastion IAM role's EKS access entry and
-# Kubernetes authentication to become available.
+# Wait for Kubernetes authentication and node availability.
 KUBERNETES_ACCESS_READY=false
 
 for attempt in $(seq 1 60); do
+
   if runuser -u ubuntu -- env \
-    AWS_DEFAULT_REGION=${region} \
-    AWS_REGION=${region} \
+    AWS_DEFAULT_REGION="$AWS_REGION" \
+    AWS_REGION="$AWS_REGION" \
     kubectl \
     --kubeconfig /home/ubuntu/.kube/config \
     get nodes >/tmp/ubuntu-kubectl-check.log 2>&1; then
@@ -199,17 +210,18 @@ for attempt in $(seq 1 60); do
     break
   fi
 
-  echo "Waiting for EKS access entry and Kubernetes authentication (attempt $attempt/60)"
+  echo "Waiting for Kubernetes API access (attempt $attempt/60)"
   cat /tmp/ubuntu-kubectl-check.log || true
+
   sleep 30
 done
 
 if [ "$KUBERNETES_ACCESS_READY" != "true" ]; then
-  echo "ERROR: Kubernetes authentication did not become available within 30 minutes."
+  echo "ERROR: Kubernetes authentication or node readiness did not become available within 30 minutes."
   exit 1
 fi
 
-# Verify root access too.
+# Verify root access.
 kubectl --kubeconfig /root/.kube/config get nodes
 
 echo "===== EKS kubeconfig configured for ubuntu and root ====="

@@ -94,7 +94,7 @@ module "ec2" {
 
   # First-boot bootstrap
   region           = var.region
-  eks_cluster_name = var.create_eks ? local.eks_cluster_name : ""
+  eks_cluster_name = var.create_eks ? module.eks_cluster[0].cluster_name : ""
   kubectl_minor    = var.eks_version
   extra_packages   = var.bastion_extra_packages
 
