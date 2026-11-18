@@ -48,12 +48,17 @@ output "bastion_private_ip" {
   value       = module.ec2.private_ips[0]
 }
 
+# output "bastion_ssh_commands" {
+#   description = "Run from a host that can reach the VPC (VPN, Direct Connect, peering). One per password user, plus the key-based ubuntu user."
+#   value = concat(
+#     [for u in nonsensitive(keys(var.bastion_users)) : "ssh ${u}@${module.ec2.private_ips[0]}   # password login"],
+#     ["ssh -i <your-private-key> ubuntu@${module.ec2.private_ips[0]}   # key login"]
+#   )
+# }
+
 output "bastion_ssh_commands" {
-  description = "Run from a host that can reach the VPC (VPN, Direct Connect, peering). One per password user, plus the key-based ubuntu user."
-  value = concat(
-    [for u in nonsensitive(keys(var.bastion_users)) : "ssh ${u}@${module.ec2.private_ips[0]}   # password login"],
-    ["ssh -i <your-private-key> ubuntu@${module.ec2.private_ips[0]}   # key login"]
-  )
+  description = "SSH into the private bastion using the Ubuntu user and your private key."
+  value       = "ssh -i <your-private-key> ubuntu@${module.ec2.private_ips[0]}"
 }
 
 output "bastion_ssm_command" {
