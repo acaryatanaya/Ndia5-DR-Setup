@@ -31,6 +31,8 @@ locals {
           "eks:ListNodegroups",
           "eks:DescribeNodegroup",
           "eks:AccessKubernetesApi",
+          "eks:ListPodIdentityAssociations",
+          "eks:DescribePodIdentityAssociation",
         ]
         Resource = "*"
       },
