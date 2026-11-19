@@ -71,7 +71,7 @@ variable "admin_principals" {
 }
 
 ############################
-# Worker nodes (one single-node managed group per node: eks-node-1, eks-node-2, ...)
+# Worker nodes 
 ############################
 variable "vpc_id" {
   description = "VPC in which the cluster and node security groups are created."
@@ -90,21 +90,47 @@ variable "api_allowed_cidrs" {
   default     = []
 }
 
-variable "node_count" {
-  description = "Number of worker nodes. Each node gets its own single-node group."
+############################
+# Worker node group
+############################
+
+variable "node_group_name" {
+  description = "Name of the single EKS managed node group."
+  type        = string
+  default     = "eks-node-group"
+}
+
+variable "node_min_size" {
+  description = "Minimum number of worker nodes."
   type        = number
   default     = 1
 
   validation {
-    condition     = var.node_count >= 1
-    error_message = "node_count must be >= 1."
+    condition     = var.node_min_size >= 1
+    error_message = "node_min_size must be at least 1."
   }
 }
 
-variable "node_name_prefix" {
-  description = "Node name prefix. Nodes are named <prefix>-1, <prefix>-2, ..."
-  type        = string
-  default     = "eks-node"
+variable "node_desired_size" {
+  description = "Initial desired number of worker nodes."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.node_desired_size >= var.node_min_size
+    error_message = "node_desired_size must be greater than or equal to node_min_size."
+  }
+}
+
+variable "node_max_size" {
+  description = "Maximum number of worker nodes."
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.node_max_size >= var.node_desired_size
+    error_message = "node_max_size must be greater than or equal to node_desired_size."
+  }
 }
 
 variable "node_instance_types" {

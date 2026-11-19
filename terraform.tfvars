@@ -54,11 +54,15 @@ enable_ebs_encryption_by_default = true # true = encrypt every new EBS volume in
 create_eks               = true
 eks_version              = "1.34"         # verify it is currently supported in your region
 eks_admin_principal_arns = ["arn:aws:iam::074235798563:user/Saurabh_Sawarkar","arn:aws:iam::074235798563:user/Tejas_Dane"]             # extra admin IAM role/user ARNs (the bastion role is added automatically)
-eks_node_instance_types  = ["t3.medium"] # do not use t2/t3.micro: only 4 pods per node
-eks_node_capacity_type   = "ON_DEMAND"
-eks_node_disk_size       = 80
-eks_node_count           = 1 # eks-node-1 -> 1st subnet, eks-node-2 -> 2nd. Set 3 for one node in each of your 3 subnets/AZs
-eks_node_name_prefix     = "eks-node"
+eks_node_group_name = "eks-node-group"
+eks_node_instance_types = ["t3.medium"]
+eks_node_capacity_type  = "ON_DEMAND"
+eks_node_disk_size      = 80
+
+# Initial capacity. Cluster Autoscaler will manage desired capacity later.
+eks_node_min_size     = 1
+eks_node_desired_size = 1
+eks_node_max_size     = 3
 
 eks_addons = {
   "vpc-cni"                = {}

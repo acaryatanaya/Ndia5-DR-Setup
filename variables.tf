@@ -208,16 +208,47 @@ variable "eks_node_disk_size" {
   default     = 30
 }
 
-variable "eks_node_count" {
-  description = "Number of EKS worker nodes. Each node gets its own single-node group, named <eks_node_name_prefix>-N."
-  type        = number
-  default     = 1
+############################
+# EKS managed node group scaling
+############################
+
+variable "eks_node_group_name" {
+  description = "Name of the EKS managed node group."
+  type        = string
+  default     = "eks-node-group"
 }
 
-variable "eks_node_name_prefix" {
-  description = "Worker node name prefix (nodes are named eks-node-1, eks-node-2, ...)."
-  type        = string
-  default     = "eks-node"
+variable "eks_node_min_size" {
+  description = "Minimum number of EKS worker nodes."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.eks_node_min_size >= 1
+    error_message = "eks_node_min_size must be at least 1."
+  }
+}
+
+variable "eks_node_desired_size" {
+  description = "Initial desired number of EKS worker nodes."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.eks_node_desired_size >= var.eks_node_min_size
+    error_message = "Desired size must be greater than or equal to minimum size."
+  }
+}
+
+variable "eks_node_max_size" {
+  description = "Maximum number of EKS worker nodes."
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.eks_node_max_size >= var.eks_node_desired_size
+    error_message = "Maximum size must be greater than or equal to desired size."
+  }
 }
 
 variable "eks_addons" {

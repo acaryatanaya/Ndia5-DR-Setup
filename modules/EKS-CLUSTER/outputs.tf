@@ -49,12 +49,12 @@ output "kms_key_arn" {
 }
 
 output "node_group_names" {
-  description = "Node group names (one per node): eks-node-1, eks-node-2, ..."
+  description = "EKS managed node group names."
   value       = [for k, v in aws_eks_node_group.this : v.node_group_name]
 }
 
 output "node_group_arns" {
-  description = "Node group ARNs."
+  description = "EKS managed node group ARNs."
   value       = [for k, v in aws_eks_node_group.this : v.arn]
 }
 

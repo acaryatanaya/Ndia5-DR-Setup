@@ -5,9 +5,10 @@ locals {
   
   kms_arn    = local.create_kms ? aws_kms_key.this[0].arn : var.kms_key_arn
 
-  # ---- Worker nodes ----
-  # eks-node-1, eks-node-2, ... -> index (1-based)
-  nodes = { for i in range(1, var.node_count + 1) : "${var.node_name_prefix}-${i}" => i }
+  # ---- Single worker node group ----
+  nodes = {
+    (var.node_group_name) = 1
+  }
 
   node_policy_arns = toset(concat([
     "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",

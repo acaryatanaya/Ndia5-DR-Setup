@@ -325,16 +325,18 @@ resource "aws_launch_template" "node" {
 }
 
 ############################
-# One single-node managed node group per node. Nodes are spread across the cluster
-# subnets round-robin (node 1 -> subnet 1, node 2 -> subnet 2, ...).
+# Single scalable EKS managed node group
 ############################
+
 resource "aws_eks_node_group" "this" {
   for_each = local.nodes
 
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = each.key
   node_role_arn   = aws_iam_role.node.arn
-  subnet_ids      = [var.subnet_ids[(each.value - 1) % length(var.subnet_ids)]]
+
+  # Use all configured EKS subnets so nodes can launch in multiple AZs.
+  subnet_ids = var.subnet_ids
 
   ami_type       = var.node_ami_type
   capacity_type  = var.node_capacity_type
@@ -346,20 +348,75 @@ resource "aws_eks_node_group" "this" {
   }
 
   scaling_config {
-    desired_size = 1
-    min_size     = 1
-    max_size     = 1
+    min_size     = var.node_min_size
+    desired_size = var.node_desired_size
+    max_size     = var.node_max_size
   }
 
   update_config {
     max_unavailable = 1
   }
 
-  labels = merge(var.node_labels, { "node-name" = each.key })
+  labels = merge(var.node_labels, {
+    "node-name" = each.key
+  })
 
-  tags = merge(var.tags, { Name = each.key })
+  tags = merge(var.tags, {
+    Name = each.key
+  })
 
-  depends_on = [aws_iam_role_policy_attachment.node]
+  lifecycle {
+    # Cluster Autoscaler will change desired_size dynamically.
+    # Terraform must not reset it on subsequent applies.
+    ignore_changes = [
+      scaling_config[0].desired_size
+    ]
+
+    # Create the new group before deleting the old group during migration.
+    create_before_destroy = true
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.node
+  ]
+}
+
+############################
+# Cluster Autoscaler discovery tags
+############################
+
+resource "aws_autoscaling_group_tag" "cluster_autoscaler_enabled" {
+  for_each = local.nodes
+
+  autoscaling_group_name = (
+    aws_eks_node_group.this[each.key]
+    .resources[0]
+    .autoscaling_groups[0]
+    .name
+  )
+
+  tag {
+    key                 = "k8s.io/cluster-autoscaler/enabled"
+    value               = "true"
+    propagate_at_launch = false
+  }
+}
+
+resource "aws_autoscaling_group_tag" "cluster_autoscaler_cluster" {
+  for_each = local.nodes
+
+  autoscaling_group_name = (
+    aws_eks_node_group.this[each.key]
+    .resources[0]
+    .autoscaling_groups[0]
+    .name
+  )
+
+  tag {
+    key                 = "k8s.io/cluster-autoscaler/${var.name}"
+    value               = "owned"
+    propagate_at_launch = false
+  }
 }
 
 ############################
