@@ -67,3 +67,16 @@ eks_addons = {
   "aws-ebs-csi-driver"     = {}
   "eks-pod-identity-agent" = {}
 }
+############################################
+# Secrets Manager configuration
+############################################
+
+external_secret_definitions = {
+  "ndia5/dr/database" = "NDIA5 DR database credentials"
+
+  # Add more secrets when required:
+  # "ndia5/dr/redis" = "NDIA5 DR Redis credentials"
+  # "ndia5/dr/jwt"   = "NDIA5 DR JWT credentials"
+}
+
+secrets_manager_kms_key_arn = null

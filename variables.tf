@@ -235,3 +235,22 @@ variable "eks_addons" {
     "eks-pod-identity-agent" = {}
   }
 }
+############################################
+# External Secrets / AWS Secrets Manager
+############################################
+
+variable "external_secret_definitions" {
+  description = "Names and descriptions of AWS Secrets Manager secrets."
+
+  type = map(string)
+
+  default = {
+    "ndia5/dr/database" = "NDIA5 DR database credentials"
+  }
+}
+
+variable "secrets_manager_kms_key_arn" {
+  description = "Optional dedicated KMS key ARN for Secrets Manager."
+  type        = string
+  default     = null
+}
