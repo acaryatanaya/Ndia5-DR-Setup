@@ -266,6 +266,17 @@ variable "eks_addons" {
     "eks-pod-identity-agent" = {}
   }
 }
+
+variable "platform_codebuild_security_group_id" {
+  description = "Security group ID attached to the EKS platform CodeBuild project."
+  type        = string
+}
+
+variable "platform_codebuild_role_arn" {
+  description = "IAM role ARN used by the EKS platform CodeBuild project."
+  type        = string
+}
+
 ############################################
 # External Secrets / AWS Secrets Manager
 ############################################

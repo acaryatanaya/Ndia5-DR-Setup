@@ -13,6 +13,10 @@ environment = "DR" # dev or uat; must match the folder in backend.tf (key = "dev
 #               --query "SecurityGroups[].[GroupId,GroupName,Description]" --output table
 vpc_id = "vpc-022fe7aef0ac46dfb"
 
+platform_codebuild_security_group_id = "sg-013350a64710b2203"
+
+platform_codebuild_role_arn = "arn:aws:iam::074235798563:role/service-role/codebuild-Ndia5-DR-EKS-Platform-Build-service-role"
+
 # ---------- Subnets: one setting per resource ----------
 bastion_subnet_id = "subnet-02f2d55a30e7e72c8" # 1 PRIVATE subnet (needs a NAT route for first-boot downloads)
 eks_subnet_ids = [                             # your 3 subnets, shared by the EKS control plane AND the worker nodes

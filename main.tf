@@ -131,13 +131,16 @@ module "eks_cluster" {
   endpoint_public_access  = false
 
   vpc_id                         = var.vpc_id
-  api_allowed_security_group_ids = [module.ec2.security_group_id] # the bastion may reach the API (443)
+  api_allowed_security_group_ids = [module.ec2.security_group_id, var.platform_codebuild_security_group_id] # the bastion may reach the API (443)
   enabled_log_types              = var.eks_enabled_log_types
 
   # Static keys (values may be unknown until apply), so for_each works on the first run.
   admin_principals = merge(
     { for i, arn in var.eks_admin_principal_arns : "extra-${i}" => arn },
-    { bastion = module.ec2.role_arn }
+    {
+    bastion   = module.ec2.role_arn
+    codebuild = var.platform_codebuild_role_arn
+    }
   )
 
   # Worker nodes: eks-node-1, eks-node-2, ... (the EKS cluster security group is added automatically)
