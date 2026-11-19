@@ -70,6 +70,7 @@ eks_addons = {
   "kube-proxy"             = {}
   "aws-ebs-csi-driver"     = {}
   "eks-pod-identity-agent" = {}
+  "metrics-server"         = {}
 }
 ############################################
 # Secrets Manager configuration

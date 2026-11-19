@@ -17,6 +17,35 @@ resource "aws_secretsmanager_secret" "this" {
   tags = var.tags
 }
 
+############################################
+# Define actual secret values
+############################################
+
+locals {
+  secret_values = {
+    "ndia5/dr/database" = jsonencode({
+      host     = "your-rds-endpoint"
+      port     = "5432"
+      dbname   = "ndia5"
+      username = "your-database-username"
+      password = "your-database-password"
+    })
+  }
+}
+
+############################################
+# Store values in AWS Secrets Manager
+############################################
+
+resource "aws_secretsmanager_secret_version" "this" {
+  for_each = local.secret_values
+
+  secret_id = aws_secretsmanager_secret.this[each.key].id
+
+  secret_string_wo = each.value
+
+  secret_string_wo_version = 1
+}
 
 ############################################
 # 2. Pod Identity IAM trust policy
