@@ -25,17 +25,9 @@ locals {
     data.aws_ssm_parameter.al2023[0].value
   )
 
-  key_pair_name = coalesce(var.key_name, "${var.name}-key")
-  key_name      = var.create_key_pair ? aws_key_pair.this[0].key_name : var.existing_key_name
+  # key_pair_name = coalesce(var.key_name, "${var.name}-key")
+  # key_name      = var.create_key_pair ? aws_key_pair.this[0].key_name : var.existing_key_name
 
-  # # First-boot script: installs AWS CLI v2, kubectl and eksctl, enables password SSH, creates the users.
-  # user_data = templatefile("${path.module}/bastion-userdata.sh.tftpl", {
-  #   region           = var.region
-  #   eks_cluster_name = var.eks_cluster_name
-  #   kubectl_minor    = var.kubectl_minor
-  #   helm_version     = var.helm_version
-  #   extra_packages   = join(" ", var.extra_packages)
-  # })
 
   # First-boot script: installs AWS CLI, kubectl, eksctl, Helm
   # and configures EKS kubeconfig automatically.

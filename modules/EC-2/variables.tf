@@ -107,32 +107,32 @@ variable "termination_protection" {
   default     = false
 }
 
-############################
-# Key pair (you create the key yourself; paste the PUBLIC key)
-############################
-variable "create_key_pair" {
-  description = "Upload public_key as a new key pair. If false, existing_key_name must be set."
-  type        = bool
-  default     = true
-}
+# ############################
+# # Key pair (you create the key yourself; paste the PUBLIC key)
+# ############################
+# variable "create_key_pair" {
+#   description = "Upload public_key as a new key pair. If false, existing_key_name must be set."
+#   type        = bool
+#   default     = true
+# }
 
-variable "key_name" {
-  description = "Name for the created key pair. Default '<name>-key'."
-  type        = string
-  default     = null
-}
+# variable "key_name" {
+#   description = "Name for the created key pair. Default '<name>-key'."
+#   type        = string
+#   default     = null
+# }
 
-variable "existing_key_name" {
-  description = "Existing AWS key pair name (used when create_key_pair = false)."
-  type        = string
-  default     = null
-}
+# variable "existing_key_name" {
+#   description = "Existing AWS key pair name (used when create_key_pair = false)."
+#   type        = string
+#   default     = null
+# }
 
-variable "public_key" {
-  description = "Contents of your .pub file (used when create_key_pair = true)."
-  type        = string
-  default     = ""
-}
+# variable "public_key" {
+#   description = "Contents of your .pub file (used when create_key_pair = true)."
+#   type        = string
+#   default     = ""
+# }
 
 ############################
 # IAM role + instance profile

@@ -18,7 +18,7 @@ echo "===== Installing base packages ====="
 
 apt-get update -y
 apt-get install -y \
-  unzip curl jq ca-certificates tar gzip fail2ban gnupg \
+  unzip curl jq ca-certificates tar gzip gnupg \
   ${extra_packages}
 
 cd /tmp
@@ -228,30 +228,38 @@ echo "===== EKS kubeconfig configured for ubuntu and root ====="
 
 %{ endif ~}
 
+# # --------------------------------------------------
+# # 8. Configure SSH key-only authentication
+# # --------------------------------------------------
+
+# echo "===== Configuring SSH security ====="
+
+# cat > /etc/ssh/sshd_config.d/00-bastion.conf <<'EOF_SSH'
+# PubkeyAuthentication yes
+# PasswordAuthentication no
+# KbdInteractiveAuthentication no
+# PermitRootLogin no
+# MaxAuthTries 4
+# EOF_SSH
+
+# sshd -t
+# systemctl restart ssh
+
+# # --------------------------------------------------
+# # 9. Enable fail2ban
+# # --------------------------------------------------
+
+# echo "===== Enabling fail2ban ====="
+
+# systemctl enable --now fail2ban
+
 # --------------------------------------------------
-# 8. Configure SSH key-only authentication
+# Disable SSH access - SSM Session Manager only
 # --------------------------------------------------
 
-echo "===== Configuring SSH security ====="
+echo "===== Disabling SSH access ====="
 
-cat > /etc/ssh/sshd_config.d/00-bastion.conf <<'EOF_SSH'
-PubkeyAuthentication yes
-PasswordAuthentication no
-KbdInteractiveAuthentication no
-PermitRootLogin no
-MaxAuthTries 4
-EOF_SSH
-
-sshd -t
-systemctl restart ssh
-
-# --------------------------------------------------
-# 9. Enable fail2ban
-# --------------------------------------------------
-
-echo "===== Enabling fail2ban ====="
-
-systemctl enable --now fail2ban
+systemctl disable --now ssh || true
 
 # --------------------------------------------------
 # 10. Verify installed tools

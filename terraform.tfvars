@@ -36,8 +36,8 @@ allow_bastion_to_rds = false # true = add a rule to the RDS security group for t
 
 # ---------- Key pair (create it yourself, paste the PUBLIC key) ----------
 #   ssh-keygen -t ed25519 -f hyd-bastion-key -C "hyd-bastion"
-create_key_pair = true
-public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIg7ACyQWiWUOuR+qOAZRAhYocqoTuaQK5xg5SCqPB+6 Ndia5-DR-Bastion" # e.g. "ssh-ed25519 AAAAC3Nza... hyd-bastion"
+# create_key_pair = true
+# public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIg7ACyQWiWUOuR+qOAZRAhYocqoTuaQK5xg5SCqPB+6 Ndia5-DR-Bastion" # e.g. "ssh-ed25519 AAAAC3Nza... hyd-bastion"
 
 # ---------- Bastion (Ubuntu 22.04) ----------
 bastion_instance_type    = "t3.medium" # t3a.medium = 2 vCPU, 4 GiB RAM, EBS only. t3a.small = 2 vCPU, 2 GiB RAM, EBS only. t3a.micro = 2 vCPU, 1 GiB RAM, EBS only.

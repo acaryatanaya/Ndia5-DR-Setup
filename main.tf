@@ -83,10 +83,10 @@ module "ec2" {
   root_volume_size    = var.bastion_root_volume_size # encrypted with the default EBS key by the module
 
   # Key pair: your own public key
-  create_key_pair   = var.create_key_pair
-  existing_key_name = var.existing_key_name
-  key_name          = "${local.name}-key"
-  public_key        = var.public_key
+  # create_key_pair   = var.create_key_pair
+  # existing_key_name = var.existing_key_name
+  # key_name          = "${local.name}-key"
+  # public_key        = var.public_key
 
   # IAM role + instance profile
   iam_managed_policy_arns = local.bastion_managed_policy_arns

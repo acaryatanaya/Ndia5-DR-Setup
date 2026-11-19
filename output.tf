@@ -56,20 +56,20 @@ output "bastion_private_ip" {
 #   )
 # }
 
-output "bastion_ssh_commands" {
-  description = "SSH into the private bastion using the Ubuntu user and your private key."
-  value       = "ssh -i <your-private-key> ubuntu@${module.ec2.private_ips[0]}"
-}
+# output "bastion_ssh_commands" {
+#   description = "SSH into the private bastion using the Ubuntu user and your private key."
+#   value       = "ssh -i <your-private-key> ubuntu@${module.ec2.private_ips[0]}"
+# }
 
 output "bastion_ssm_command" {
   description = "No VPN? Open a shell through SSM Session Manager (needs NAT or SSM VPC endpoints)."
   value       = "aws ssm start-session --region ${var.region} --target ${module.ec2.instance_ids[0]}"
 }
 
-output "bastion_ssm_ssh_tunnel" {
-  description = "SSH over SSM: forwards local port 2222 to the bastion's port 22, then 'ssh -p 2222 user1@localhost'."
-  value       = "aws ssm start-session --region ${var.region} --target ${module.ec2.instance_ids[0]} --document-name AWS-StartPortForwardingSession --parameters portNumber=22,localPortNumber=2222"
-}
+# output "bastion_ssm_ssh_tunnel" {
+#   description = "SSH over SSM: forwards local port 2222 to the bastion's port 22, then 'ssh -p 2222 user1@localhost'."
+#   value       = "aws ssm start-session --region ${var.region} --target ${module.ec2.instance_ids[0]} --document-name AWS-StartPortForwardingSession --parameters portNumber=22,localPortNumber=2222"
+# }
 
 output "bastion_role_arn" {
   description = "IAM role of the bastion."

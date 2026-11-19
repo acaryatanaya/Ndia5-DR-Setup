@@ -31,17 +31,17 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-############################
-# Key pair (your own public key)
-############################
-resource "aws_key_pair" "this" {
-  count = var.create_key_pair ? 1 : 0
+# ############################
+# # Key pair (your own public key)
+# ############################
+# resource "aws_key_pair" "this" {
+#   count = var.create_key_pair ? 1 : 0
 
-  key_name   = local.key_pair_name
-  public_key = trimspace(var.public_key)
+#   key_name   = local.key_pair_name
+#   public_key = trimspace(var.public_key)
 
-  tags = merge(var.tags, { Name = local.key_pair_name })
-}
+#   tags = merge(var.tags, { Name = local.key_pair_name })
+# }
 
 ############################
 # IAM role + instance profile
@@ -141,7 +141,7 @@ resource "aws_instance" "this" {
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_ids[count.index % length(var.subnet_ids)]
   vpc_security_group_ids      = [aws_security_group.this.id]
-  key_name                    = local.key_name
+  # key_name                    = local.key_name
   iam_instance_profile        = aws_iam_instance_profile.this.name
   associate_public_ip_address = var.associate_public_ip
   user_data                   = local.user_data
@@ -177,10 +177,10 @@ resource "aws_instance" "this" {
       error_message = "No subnets given. Set subnet_ids to at least one existing subnet."
     }
 
-    precondition {
-      condition     = var.create_key_pair ? trimspace(var.public_key) != "" : var.existing_key_name != null
-      error_message = "Set public_key (contents of your .pub file) when create_key_pair = true, or existing_key_name when it is false."
-    }
+    # precondition {
+    #   condition     = var.create_key_pair ? trimspace(var.public_key) != "" : var.existing_key_name != null
+    #   error_message = "Set public_key (contents of your .pub file) when create_key_pair = true, or existing_key_name when it is false."
+    # }
   }
 }
 

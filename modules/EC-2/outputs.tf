@@ -23,10 +23,10 @@ output "ssh_user" {
   value       = local.ssh_user
 }
 
-output "key_name" {
-  description = "Key pair name used by the instances."
-  value       = local.key_name
-}
+# output "key_name" {
+#   description = "Key pair name used by the instances."
+#   value       = local.key_name
+# }
 
 output "role_arn" {
   description = "Instance IAM role ARN."
