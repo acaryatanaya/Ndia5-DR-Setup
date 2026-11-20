@@ -110,6 +110,68 @@ output "eks_kubeconfig_command" {
     "aws eks update-kubeconfig --region ${var.region} --name ${module.eks_cluster[0].cluster_name}"
   ) : null
 }
+
+
+############################################
+# EKS Platform Integration Contract
+############################################
+
+output "eks_cluster_arn" {
+  description = "EKS cluster ARN."
+  value       = try(module.eks_cluster[0].cluster_arn, null)
+}
+
+output "eks_cluster_version" {
+  description = "Kubernetes version of the EKS cluster."
+  value       = try(module.eks_cluster[0].cluster_version, null)
+}
+
+output "eks_cluster_ca_data" {
+  description = "Base64 encoded EKS cluster certificate authority data."
+  value       = try(module.eks_cluster[0].cluster_certificate_authority_data, null)
+}
+
+output "eks_oidc_provider_arn" {
+  description = "IAM OIDC provider ARN used for IRSA."
+  value       = try(module.eks_cluster[0].oidc_provider_arn, null)
+}
+
+output "eks_oidc_provider_url" {
+  description = "OIDC issuer URL without https://."
+  value       = try(module.eks_cluster[0].oidc_provider_url, null)
+}
+
+output "eks_node_group_arns" {
+  description = "EKS managed node group ARNs."
+  value       = try(module.eks_cluster[0].node_group_arns, [])
+}
+
+output "eks_node_role_arn" {
+  description = "IAM role ARN associated with EKS worker nodes."
+  value       = try(module.eks_cluster[0].node_role_arn, null)
+}
+
+############################################
+# Platform Metadata
+############################################
+
+output "aws_region" {
+  description = "AWS region where infrastructure is deployed."
+  value       = var.region
+}
+
+output "project_name" {
+  description = "Infrastructure project name."
+  value       = var.project
+}
+
+output "deployment_environment" {
+  description = "Infrastructure deployment environment."
+  value       = var.environment
+}
+
+
+
 ############################################
 # External Secrets integration
 ############################################
