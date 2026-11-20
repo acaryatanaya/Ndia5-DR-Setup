@@ -159,31 +159,3 @@ module "eks_cluster" {
   depends_on = [terraform_data.eks_prereqs]
 }
 # EKS creates its own cluster security group (attached to the control plane and the nodes).
-############################################
-# AWS Secrets Manager + ESO IAM integration
-############################################
-
-module "secret_manager" {
-  source = "./modules/SECRET-MANAGER"
-  count  = var.create_eks ? 1 : 0
-
-  region = var.region
-
-  role_name = "${local.eks_cluster_name}-eso-role"
-
-  cluster_name = module.eks_cluster[0].cluster_name
-  cluster_arn  = module.eks_cluster[0].cluster_arn
-
-  namespace       = "external-secrets"
-  service_account = "external-secrets"
-
-  secret_definitions = var.external_secret_definitions
-
-  kms_key_arn = var.secrets_manager_kms_key_arn
-
-  tags = var.tags
-
-  depends_on = [
-    module.eks_cluster
-  ]
-}

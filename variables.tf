@@ -277,23 +277,3 @@ variable "platform_codebuild_role_arn" {
   description = "IAM role ARN used by the EKS platform CodeBuild project."
   type        = string
 }
-
-############################################
-# External Secrets / AWS Secrets Manager
-############################################
-
-variable "external_secret_definitions" {
-  description = "Names and descriptions of AWS Secrets Manager secrets."
-
-  type = map(string)
-
-  default = {
-    "ndia5/dr/database" = "NDIA5 DR database credentials"
-  }
-}
-
-variable "secrets_manager_kms_key_arn" {
-  description = "Optional dedicated KMS key ARN for Secrets Manager."
-  type        = string
-  default     = null
-}

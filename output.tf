@@ -169,36 +169,3 @@ output "deployment_environment" {
   description = "Infrastructure deployment environment."
   value       = var.environment
 }
-
-
-
-############################################
-# External Secrets integration
-############################################
-
-output "external_secrets_role_arn" {
-  description = "IAM role ARN used by ESO."
-
-  value = try(
-    module.secret_manager[0].external_secrets_role_arn,
-    null
-  )
-}
-
-output "external_secrets_association_id" {
-  description = "EKS Pod Identity association ID."
-
-  value = try(
-    module.secret_manager[0].pod_identity_association_id,
-    null
-  )
-}
-
-output "secrets_manager_arns" {
-  description = "AWS Secrets Manager secret ARNs."
-
-  value = try(
-    module.secret_manager[0].secret_arns,
-    {}
-  )
-}
