@@ -65,3 +65,37 @@ output "cluster_autoscaler_image_tag" {
   description = "Cluster Autoscaler image version."
   value       = module.cluster_autoscaler.image_tag
 }
+
+############################################
+# AWS Load Balancer Controller
+############################################
+
+output "aws_load_balancer_controller_iam_role_arn" {
+  description = "AWS Load Balancer Controller IRSA role ARN."
+  value       = module.aws_load_balancer_controller.iam_role_arn
+}
+
+output "aws_load_balancer_controller_iam_policy_arn" {
+  description = "AWS Load Balancer Controller IAM policy ARN."
+  value       = module.aws_load_balancer_controller.iam_policy_arn
+}
+
+output "aws_load_balancer_controller_helm_release" {
+  description = "AWS Load Balancer Controller Helm release."
+  value       = module.aws_load_balancer_controller.helm_release_name
+}
+
+output "aws_load_balancer_controller_chart_version" {
+  description = "Installed controller Helm chart version."
+  value       = module.aws_load_balancer_controller.chart_version
+}
+
+output "aws_load_balancer_controller_image_tag" {
+  description = "Installed controller image version."
+  value       = module.aws_load_balancer_controller.image_tag
+}
+
+output "aws_load_balancer_controller_service_account" {
+  description = "Controller Kubernetes service account."
+  value       = module.aws_load_balancer_controller.service_account_name
+}

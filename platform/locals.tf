@@ -11,6 +11,7 @@ locals {
   ##########################################
 
   aws_region = local.infra.aws_region
+   vpc_id     = local.infra.vpc_id
 
   project     = local.infra.project_name
   environment = local.infra.deployment_environment
