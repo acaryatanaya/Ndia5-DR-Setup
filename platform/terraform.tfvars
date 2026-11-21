@@ -27,7 +27,7 @@ aws_load_balancer_controller_image_tag     = "v2.14.1"
 ############################################
 
 # Set this to the ESO chart version you have approved and tested.
-external_secrets_chart_version = "REPLACE_WITH_PINNED_CHART_VERSION"
+external_secrets_chart_version = "2.15.0"
 
 external_secrets_secret_names = [
   "ndia5/dr/backend",

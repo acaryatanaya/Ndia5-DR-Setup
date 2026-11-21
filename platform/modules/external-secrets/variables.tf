@@ -9,10 +9,10 @@ variable "region" {
   type        = string
 }
 
-variable "cluster_arn" {
-  description = "EKS cluster ARN used for Pod Identity association."
-  type        = string
-}
+# variable "cluster_arn" {
+#   description = "EKS cluster ARN used for Pod Identity association."
+#   type        = string
+# }
 
 variable "secret_names" {
   description = "Names of existing client-managed Secrets Manager secrets."
