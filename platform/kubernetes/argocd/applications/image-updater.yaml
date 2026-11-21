@@ -1,0 +1,30 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+
+metadata:
+  name: ndia5-frontend-image-updater
+  namespace: argocd
+
+spec:
+  writeBackConfig:
+    method: "git:secret:argocd/argocd-image-updater-git-creds"
+    gitConfig:
+      repository: "https://github.com/acaryatanaya/Ndia5-DR-Setup.git"
+      branch: "main"
+      writeBackTarget: "helmvalues:./values.yaml"
+
+  applicationRefs:
+    - namePattern: "ndia5-frontend"
+
+      images:
+        - alias: "frontend"
+          imageName: "074235798563.dkr.ecr.ap-south-2.amazonaws.com/ndia5/frontend-prod:latest-main-20261120095544"
+
+          manifestTargets:
+            helm:
+              name: "image.frontend.repository"
+              tag: "image.frontend.tag"
+
+          commonUpdateSettings:
+            updateStrategy: "alphabetical"
+            allowTags: "regexp:^latest-main-[0-9]{14}$"

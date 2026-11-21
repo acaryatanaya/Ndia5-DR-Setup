@@ -4,7 +4,7 @@ replicaCount:
 image:
   frontend:
     repository: 074235798563.dkr.ecr.ap-south-2.amazonaws.com/ndia5/frontend-prod
-    tag: latest
+    tag: latest-main-20261120095544
     pullPolicy: Always
 
 resources:

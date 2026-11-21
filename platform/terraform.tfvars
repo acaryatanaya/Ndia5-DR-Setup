@@ -44,3 +44,5 @@ external_secrets_kms_key_arn = null
 
 argocd_chart_version = "10.18.2"
 argocd_server_hostname = "argocd.ndia5.com"
+
+argocd_image_updater_chart_version = "1.3.2"

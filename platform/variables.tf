@@ -71,3 +71,9 @@ variable "argocd_server_hostname" {
   description = "External DNS hostname for Argo CD."
   type        = string
 }
+
+variable "argocd_image_updater_chart_version" {
+  description = "Pinned Argo CD Image Updater Helm chart version."
+  type        = string
+  default     = "1.3.2"
+}

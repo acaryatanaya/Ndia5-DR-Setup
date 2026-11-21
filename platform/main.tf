@@ -77,3 +77,31 @@ module "argo_cd" {
 
   tags = local.common_tags
 }
+
+
+############################################
+# Argo CD Image Updater
+############################################
+
+module "argocd_image_updater" {
+  source = "./modules/argocd-image-updater"
+
+  cluster_name = local.eks_cluster_name
+  region       = local.aws_region
+  account_id   = data.aws_caller_identity.current.account_id
+
+  namespace            = "argocd"
+  service_account_name = "argocd-image-updater"
+
+  helm_chart_version = var.argocd_image_updater_chart_version
+
+  ecr_repository_names = [
+    "ndia5/frontend-prod"
+  ]
+
+  tags = local.common_tags
+
+  depends_on = [
+    module.argo_cd
+  ]
+}
