@@ -57,3 +57,17 @@ variable "external_secrets_kms_key_arn" {
   type        = string
   default     = null
 }
+
+############################################
+# Argo CD
+############################################
+
+variable "argocd_chart_version" {
+  description = "Pinned Helm chart version for Argo CD."
+  type        = string
+}
+
+variable "argocd_server_hostname" {
+  description = "External DNS hostname for Argo CD."
+  type        = string
+}

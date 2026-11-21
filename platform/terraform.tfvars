@@ -37,3 +37,10 @@ external_secrets_secret_names = [
 
 # Null when using the AWS-managed Secrets Manager KMS key.
 external_secrets_kms_key_arn = null
+
+############################################
+# Argo CD
+############################################
+
+argocd_chart_version = "10.18.2"
+argocd_server_hostname = "argocd.ndia5.com"

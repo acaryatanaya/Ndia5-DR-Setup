@@ -62,3 +62,18 @@ module "external_secrets" {
 
   tags = local.common_tags
 }
+
+
+############################################
+# Argo CD
+############################################
+
+module "argo_cd" {
+  source = "./modules/argo-cd"
+
+  namespace          = "argocd"
+  helm_chart_version = var.argocd_chart_version
+  server_hostname    = var.argocd_server_hostname
+
+  tags = local.common_tags
+}
