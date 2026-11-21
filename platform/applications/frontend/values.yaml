@@ -1,0 +1,38 @@
+replicaCount:
+  frontend: 1
+
+image:
+  frontend:
+    repository: 074235798563.dkr.ecr.ap-south-2.amazonaws.com/ndia5/frontend-prod
+    tag: latest
+    pullPolicy: Always
+
+resources:
+  frontend:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+service:
+  frontend:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+
+autoscaling:
+  frontend:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 70
+
+#clusterAutoscaler:
+#  enabled: true
+#  roleARN: arn:aws:iam::<ACCOUNT_ID>:role/Apex-eks-cluster-autoscaler-role
+#  nodeGroupName: Ndia5-EKS-Nodegroup-UAT
+#  minNodes: 1
+#  maxNodes: 10

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ndia5-dr-root
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/acaryatanaya/Ndia5-DR-Setup.git
+    targetRevision: main
+    path: platform/kubernetes/argocd/applications
+    directory:
+      recurse: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

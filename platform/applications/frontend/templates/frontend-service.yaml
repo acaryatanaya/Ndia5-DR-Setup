@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ndia5-frontend
+  namespace: ndia5
+  # annotations:
+  #   alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+  #   alb.ingress.kubernetes.io/healthcheck-path: /login
+  #   alb.ingress.kubernetes.io/success-codes: "200-299"
+  #   alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+spec:
+  selector:
+    app: ndia5-frontend
+  type: {{ .Values.service.frontend.type }}
+  ports:
+    - port: {{ .Values.service.frontend.port }}
+      targetPort: {{ .Values.service.frontend.targetPort }}
+
