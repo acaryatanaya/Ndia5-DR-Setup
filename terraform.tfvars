@@ -35,28 +35,21 @@ ecr_repository_names = [
   "ndia5/frontend-prod",
   "ndia5/report-scheduler-prod",
   "ndia5/transaction-scheduler-prod"
-]                            # replicated repositories. [] to skip.
-allow_bastion_to_rds = false # true = add a rule to the RDS security group for the bastion
+]                            
 
-# ---------- Key pair (create it yourself, paste the PUBLIC key) ----------
-#   ssh-keygen -t ed25519 -f hyd-bastion-key -C "hyd-bastion"
-# create_key_pair = true
-# public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIg7ACyQWiWUOuR+qOAZRAhYocqoTuaQK5xg5SCqPB+6 Ndia5-DR-Bastion" # e.g. "ssh-ed25519 AAAAC3Nza... hyd-bastion"
+allow_bastion_to_rds = false # true = add a rule to the RDS security group for the bastion
 
 # ---------- Bastion (Ubuntu 22.04) ----------
 bastion_instance_type    = "t3.medium" # t3a.medium = 2 vCPU, 4 GiB RAM, EBS only. t3a.small = 2 vCPU, 2 GiB RAM, EBS only. t3a.micro = 2 vCPU, 1 GiB RAM, EBS only.
 bastion_root_volume_size = 30           # GiB, always encrypted
 
 
-# bastion_extra_packages    = ["postgresql-client"] # or ["mysql-client"], to reach the RDS replica
-# bastion_extra_policy_arns = []                    # eksctl that CREATES clusters needs much broader rights
-
 enable_ebs_encryption_by_default = true # true = encrypt every new EBS volume in this region/account
 
 # ---------- EKS: private endpoint only (no public access) ----------
-# Cost: control plane ~$73/mo + nodes. kubectl/eksctl work only from inside the VPC, i.e. on the bastion.
+
 create_eks               = true
-eks_version              = "1.34"         # verify it is currently supported in your region
+eks_version              = "1.35"         
 eks_admin_principal_arns = ["arn:aws:iam::074235798563:user/Saurabh_Sawarkar","arn:aws:iam::074235798563:user/Tejas_Dane"]             # extra admin IAM role/user ARNs (the bastion role is added automatically)
 eks_node_group_name = "eks-node-group"
 eks_node_instance_types = ["t3.medium"]

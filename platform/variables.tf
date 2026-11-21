@@ -36,3 +36,24 @@ variable "aws_load_balancer_controller_image_tag" {
   description = "Container image version for AWS Load Balancer Controller."
   type        = string
 }
+
+
+############################################
+# External Secrets Operator
+############################################
+
+variable "external_secrets_chart_version" {
+  description = "Pinned Helm chart version for External Secrets Operator."
+  type        = string
+}
+
+variable "external_secrets_secret_names" {
+  description = "Existing client-managed Secrets Manager secret names."
+  type        = set(string)
+}
+
+variable "external_secrets_kms_key_arn" {
+  description = "Optional customer-managed KMS key ARN for Secrets Manager."
+  type        = string
+  default     = null
+}

@@ -99,3 +99,28 @@ output "aws_load_balancer_controller_service_account" {
   description = "Controller Kubernetes service account."
   value       = module.aws_load_balancer_controller.service_account_name
 }
+
+
+############################################
+# External Secrets Operator
+############################################
+
+output "external_secrets_iam_role_arn" {
+  description = "ESO EKS Pod Identity IAM role ARN."
+  value       = module.external_secrets.iam_role_arn
+}
+
+output "external_secrets_pod_identity_association_id" {
+  description = "ESO EKS Pod Identity association ID."
+  value       = module.external_secrets.pod_identity_association_id
+}
+
+output "external_secrets_helm_release" {
+  description = "ESO Helm release name."
+  value       = module.external_secrets.helm_release_name
+}
+
+output "external_secrets_secret_arns" {
+  description = "Existing Secrets Manager secret ARNs discovered by ESO module."
+  value       = module.external_secrets.secret_arns
+}

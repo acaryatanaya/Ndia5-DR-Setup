@@ -98,32 +98,6 @@ variable "allow_bastion_to_rds" {
 }
 
 ############################
-# Key pair (you create the key yourself; paste the PUBLIC key)
-############################
-# variable "create_key_pair" {
-#   description = "Upload your public key as a new key pair."
-#   type        = bool
-#   default     = true
-# }
-
-# variable "existing_key_name" {
-#   description = "Existing AWS key pair name, used when create_key_pair = false."
-#   type        = string
-#   default     = null
-# }
-
-# variable "public_key" {
-#   description = "Contents of your .pub file. Used for the bastion's default 'ubuntu' user."
-#   type        = string
-#   default     = ""
-
-#   validation {
-#     condition     = var.public_key == "" || can(regex("^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp[0-9]+) ", trimspace(var.public_key)))
-#     error_message = "public_key must be a valid OpenSSH public key (starts with ssh-ed25519, ssh-rsa or ecdsa-sha2-...). Paste the contents of your .pub file, not the private key."
-#   }
-# }
-
-############################
 # Bastion server (Ubuntu 22.04)
 ############################
 
@@ -175,7 +149,7 @@ variable "create_eks" {
 variable "eks_version" {
   description = "Kubernetes version. Check currently supported versions in the EKS docs. The bastion installs a matching kubectl."
   type        = string
-  default     = "1.34"
+  default     = "1.35"
 }
 
 variable "eks_enabled_log_types" {

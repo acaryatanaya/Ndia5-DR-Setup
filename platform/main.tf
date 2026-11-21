@@ -38,3 +38,27 @@ module "aws_load_balancer_controller" {
 
   tags = local.common_tags
 }
+
+
+############################################
+# External Secrets Operator
+############################################
+
+module "external_secrets" {
+  source = "./modules/external-secrets"
+
+  cluster_name = local.eks_cluster_name
+  region       = local.aws_region
+
+  namespace            = "external-secrets"
+  service_account_name = "external-secrets"
+
+  helm_chart_version = var.external_secrets_chart_version
+
+  secret_names = var.external_secrets_secret_names
+
+  # Keep null for AWS-managed Secrets Manager encryption.
+  kms_key_arn = var.external_secrets_kms_key_arn
+
+  tags = local.common_tags
+}
