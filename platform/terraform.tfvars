@@ -33,6 +33,7 @@ external_secrets_secret_names = [
   "ndia5/dr/backend",
   "ndia5/dr/transaction-scheduler",
   "ndia5/dr/report-scheduler"
+  "ndia5/dr/argocd-image-updater-git-creds"
 ]
 
 # Null when using the AWS-managed Secrets Manager KMS key.
