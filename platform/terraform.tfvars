@@ -32,7 +32,7 @@ external_secrets_chart_version = "2.15.0"
 external_secrets_secret_names = [
   "ndia5/dr/backend",
   "ndia5/dr/transaction-scheduler",
-  "ndia5/dr/report-scheduler"
+  "ndia5/dr/report-scheduler",
   "ndia5/dr/argocd-image-updater-git-creds"
 ]
 
