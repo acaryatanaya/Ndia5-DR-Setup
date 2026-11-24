@@ -1,3 +1,4 @@
+
 resource "helm_release" "image_updater" {
   name       = "argocd-image-updater"
   repository = "https://argoproj.github.io/argo-helm"
@@ -51,7 +52,7 @@ resource "helm_release" "image_updater" {
             #!/bin/sh
             set -eu
 
-            PASSWORD=$(/opt/aws-cli/v2/current/bin/aws ecr get-login-password \
+            PASSWORD=$(/opt/aws-cli/usr/bin/aws ecr get-login-password \
               --region "${var.region}")
 
             printf 'AWS:%s\n' "$PASSWORD"
@@ -71,26 +72,41 @@ resource "helm_release" "image_updater" {
         {
           name  = "AWS_PAGER"
           value = ""
+        },
+        {
+          name  = "PYTHONHOME"
+          value = "/opt/aws-cli/usr"
+        },
+        {
+          name  = "PYTHONPATH"
+          value = "/opt/aws-cli/usr/lib/python3.14/site-packages"
+        },
+        {
+          name  = "LD_LIBRARY_PATH"
+          value = "/opt/aws-cli/usr/lib:/opt/aws-cli/lib"
         }
       ]
 
       initContainers = [
         {
           name    = "install-aws-cli"
-          image   = "public.ecr.aws/aws-cli/aws-cli:2.27.41"
+          image   = "quay.io/argoprojlabs/argocd-image-updater:v1.3.1"
           command = ["/bin/sh", "-c"]
 
           args = [
             <<-SCRIPT
               set -eu
 
-              test -x /usr/local/aws-cli/v2/current/bin/aws
+              apk --root /opt/aws-cli \
+                --initdb \
+                --repositories-file /etc/apk/repositories \
+                --keys-dir /etc/apk/keys \
+                add aws-cli
 
-              mkdir -p /tools
-              cp -a /usr/local/aws-cli/. /tools/
-              chmod -R a+rX /tools
+              test -x /opt/aws-cli/usr/bin/aws
+              test -x /opt/aws-cli/usr/bin/python3
 
-              test -x /tools/v2/current/bin/aws
+              echo "AWS CLI installation completed successfully"
             SCRIPT
           ]
 
@@ -104,7 +120,7 @@ resource "helm_release" "image_updater" {
           volumeMounts = [
             {
               name      = "aws-cli-tools"
-              mountPath = "/tools"
+              mountPath = "/opt/aws-cli"
             }
           ]
         }
