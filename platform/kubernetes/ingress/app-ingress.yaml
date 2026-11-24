@@ -13,9 +13,9 @@ metadata:
 
 spec:
   ingressClassName: alb
-
+  
   rules:
-    - host: dr-portal.ndia5.com
+    - host: dr-portal.ndia5.com  #dr-frontend
       http:
         paths:
           - path: /
