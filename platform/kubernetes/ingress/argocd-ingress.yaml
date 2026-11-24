@@ -17,7 +17,7 @@ spec:
   ingressClassName: alb
 
   rules:
-    - host: argocd.ndia5.com
+    - host: argocd.ndia5.com   #argo-ingress
       http:
         paths:
           - path: /
