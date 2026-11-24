@@ -2,8 +2,13 @@ locals {
   name             = "${var.project}-${var.environment}"
   eks_cluster_name = "${local.name}-eks"
 
-  # Everything that must already exist; each one is looked up and checked against the VPC (see main.tf).
-  all_subnet_ids = distinct(concat([var.bastion_subnet_id], var.eks_subnet_ids))
+  # # Everything that must already exist; each one is looked up and checked against the VPC (see main.tf).
+  # all_subnet_ids = distinct(concat([var.bastion_subnet_id], var.eks_subnet_ids))
+  all_subnet_ids = distinct(concat(
+  [var.bastion_subnet_id],
+  var.eks_subnet_ids,
+  [for mapping in var.nlb_subnet_mappings : mapping.subnet_id]
+))
 
   # Facts read from the existing resources.
   subnet_azs = { for id in local.all_subnet_ids : id => data.aws_subnet.this[id].availability_zone }

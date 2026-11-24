@@ -159,3 +159,40 @@ module "eks_cluster" {
   depends_on = [terraform_data.eks_prereqs]
 }
 # EKS creates its own cluster security group (attached to the control plane and the nodes).
+
+resource "terraform_data" "nlb_prereqs" {
+  lifecycle {
+    precondition {
+      condition = (
+        length(distinct([
+          for mapping in var.nlb_subnet_mappings :
+          data.aws_subnet.this[mapping.subnet_id].availability_zone
+        ])) == 2
+      )
+
+      error_message = "NLB subnet mappings must use two different Availability Zones."
+    }
+  }
+}
+
+module "nlb" {
+  source = "./modules/NLB"
+
+  name   = "Ndia5-DR-NLB"
+  vpc_id = var.vpc_id
+
+  subnet_mappings = var.nlb_subnet_mappings
+
+  allowed_cidrs = ["0.0.0.0/0"]
+
+  health_check_protocol = "HTTPS"
+  health_check_path     = "/"
+  health_check_matcher  = "200-499"
+
+  depends_on = [terraform_data.nlb_prereqs]
+
+  tags = {
+    Project = "Ndia5"
+    Region  = "ap-south-2"
+  }
+}

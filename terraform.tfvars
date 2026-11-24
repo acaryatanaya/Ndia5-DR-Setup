@@ -69,3 +69,14 @@ eks_addons = {
   "eks-pod-identity-agent" = {}
   "metrics-server"         = {}
 }
+
+nlb_subnet_mappings = [
+  {
+    subnet_id     = "subnet-0921a69d79f3c5adf"
+    allocation_id = "eipalloc-0d5cf3ee825c6d1a8"
+  },
+  {
+    subnet_id     = "subnet-07f68f15052acf0eb"
+    allocation_id = "eipalloc-05718f7309bc6b729"
+  }
+]

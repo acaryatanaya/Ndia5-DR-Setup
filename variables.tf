@@ -251,3 +251,12 @@ variable "platform_codebuild_role_arn" {
   description = "IAM role ARN used by the EKS platform CodeBuild project."
   type        = string
 }
+
+
+variable "nlb_subnet_mappings" {
+  description = "Hyderabad public subnets and EIP allocations for NLB."
+  type = list(object({
+    subnet_id     = string
+    allocation_id = string
+  }))
+}
